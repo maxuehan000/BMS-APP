@@ -3,16 +3,16 @@
         {
             "name": "TG6A-APP",
             "includePath": [
-                "f:\\项目资料\\App-Para\\CMSIS\\core",
-                "f:\\项目资料\\App-Para\\CMSIS\\device",
-                "f:\\项目资料\\App-Para\\n32l40x_std_periph_driver\\inc",
-                "f:\\项目资料\\App-Para\\BMS",
-                "f:\\项目资料\\App-Para\\BMS\\AFE\\kc81710h",
-                "f:\\项目资料\\App-Para\\BMS\\MCU",
+                "f:\\项目资料\\星海图\\App-Para\\CMSIS\\core",
+                "f:\\项目资料\\星海图\\App-Para\\CMSIS\\device",
+                "f:\\项目资料\\星海图\\App-Para\\n32l40x_std_periph_driver\\inc",
+                "f:\\项目资料\\星海图\\App-Para\\BMS",
+                "f:\\项目资料\\星海图\\App-Para\\BMS\\AFE\\kc81710h",
+                "f:\\项目资料\\星海图\\App-Para\\BMS\\MCU",
                 "D:\\Keil_v5\\ARM\\ARMCC\\include",
                 "D:\\Keil_v5\\ARM\\ARMCC\\include\\rw",
-                "f:\\项目资料\\App-Para\\CMSIS\\device\\startup",
-                "f:\\项目资料\\App-Para\\n32l40x_std_periph_driver\\src"
+                "f:\\项目资料\\星海图\\App-Para\\CMSIS\\device\\startup",
+                "f:\\项目资料\\星海图\\App-Para\\n32l40x_std_periph_driver\\src"
             ],
             "defines": [
                 "N32L40X",
