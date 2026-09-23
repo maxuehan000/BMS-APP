@@ -1,6 +1,5 @@
 # ---> CMake
 build*
-Project*
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -106,4 +105,13 @@ dkms.conf
 # ---> IAR EWARM 工程缓存
 *.SearchResults
 *.WK3
+
+# ---> Keil MDK 工程编译产物
+Project/bin/
+Project/Listings/
+Project/Objects/
+*.uvguix*
+JLinkLog.txt
+*.log
+*.log.lock
 
