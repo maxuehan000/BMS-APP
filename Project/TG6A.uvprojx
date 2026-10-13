@@ -644,6 +644,11 @@
               <FilePath>..\BMS\CanOtaSL.c</FilePath>
             </File>
             <File>
+              <FileName>CanUpgradeBW.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BMS\CanUpgradeBW.c</FilePath>
+            </File>
+            <File>
               <FileName>SoftWareCRC.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BMS\SoftWareCRC.c</FilePath>

@@ -90,6 +90,7 @@ typedef enum
 //#define CAN_SW_PROTOCOL
 #define CAN_AND_PROTOCOL
 #define CAN_OTA_SL
+#define CAN_BW_UPGRADE
 #define CHG_OVER_NTC_DISP		//充电过温假充
 
 //#define LAB_TEST_MODE    //可靠性测试模式

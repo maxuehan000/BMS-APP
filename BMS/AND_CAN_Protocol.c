@@ -297,6 +297,19 @@ void CAN_Filter_Init(void)
     CAN_FilterInitStructure.Filter_FIFOAssignment = CAN_FIFO0;
     CAN_InitFilter(&CAN_FilterInitStructure);
 
+#ifdef CAN_BW_UPGRADE
+	// BW CAN upgrade protocol (0x1F7006F1)
+	CAN_FilterInitStructure.Filter_Mode           = CAN_Filter_IdListMode;
+    data = (CAN_BWU_RX_ID<<3)|0x04;
+    CAN_FilterInitStructure.Filter_Num            = 8;
+    CAN_FilterInitStructure.Filter_HighId         = data>>16;
+    CAN_FilterInitStructure.Filter_LowId          = data;
+    CAN_FilterInitStructure.FilterMask_HighId     = data>>16;
+    CAN_FilterInitStructure.FilterMask_LowId      = data;
+    CAN_FilterInitStructure.Filter_FIFOAssignment = CAN_FIFO0;
+    CAN_InitFilter(&CAN_FilterInitStructure);
+#endif
+
 
     /* IT Configuration for CAN */
     CAN_INTConfig(AND_CAN_DEV, CAN_INT_FMP0, ENABLE);
@@ -1008,6 +1021,10 @@ void AndCanReceiveProcess(void)
 	OtaSlReceiveProcess(AndCanRxMsgNow);
 #endif
 
+#ifdef CAN_BW_UPGRADE
+	UpgradeBWMsgProcess(AndCanRxMsgNow);
+#endif
+
 	//厂测指令
 #if 1
 	if (BW_ID_EXT_PC == AndCanRxMsgNow.ExtId)
@@ -1073,6 +1090,9 @@ void AndCanInit(void)
 {
 	AndHwCanInit();
 //////	BwCanBmsRegister(AndTxQueue);
+#ifdef CAN_BW_UPGRADE
+	UpgradeBWRegister(AndTxQueue);
+#endif
 	TimerAndCanFlag = 0;
 
     AndCanInfo.BroadCaseTimer = BMS_CAN_BC_OUT_TIME;

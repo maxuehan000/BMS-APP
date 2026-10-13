@@ -59,6 +59,9 @@ extern "C" {
 //#include "EfLog.h" 
 
 #include "CanBW.h" 
+#ifdef CAN_BW_UPGRADE
+#include "CanUpgradeBW.h"
+#endif
 #include "UartBW.h"
 
 #define CHG_NO_DIEDOE

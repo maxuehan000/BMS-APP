@@ -28,6 +28,9 @@
 #ifdef CAN_AND_PROTOCOL
 #include "AND_CAN_PROTOCOL.h"
 #endif
+#ifdef CAN_BW_UPGRADE
+#include "CanUpgradeBW.h"
+#endif
 
 const char version[3] __attribute__((at(0x08003000))) = "0A";
 
@@ -162,6 +165,9 @@ void TaskTickUpdate(void)
     TimerPowFlag = 1;
     TimerSafeFlag = 1;
     TimerUartBWFlag = 1;
+#ifdef CAN_BW_UPGRADE
+    UpgradeBwTimerCallBack(TickCnt);	// 10ms
+#endif
 #ifdef SOC_SUPPORT
     TimerSocFlag = 1;
 #endif
@@ -289,6 +295,9 @@ int main(void)
 #endif
 #ifdef CAN_OTA_SL
 		OtaSlJudge();
+#endif
+#ifdef CAN_BW_UPGRADE
+		UpgradeBWSchedule();
 #endif
 	
 #ifdef BOOTLOADER
