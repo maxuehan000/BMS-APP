@@ -115,3 +115,6 @@ JLinkLog.txt
 *.log
 *.log.lock
 
+# ---> 本机个人配置（含绝对路径，不入库；.vscode/c_cpp_properties.json 除外）
+.vscode/settings.json
+

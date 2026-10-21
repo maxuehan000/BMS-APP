@@ -21,6 +21,7 @@
 #endif
 #include "dataflash.h"
 #include "soc.h"
+//#include "kalman_soc.h"
 
 #ifdef BOOTLOADER
 #include "gotoboot.h"
@@ -242,6 +243,7 @@ int main(void)
 #ifdef SOC_SUPPORT
     SocInit();                                      // SOC初始化
 #endif
+ //   KalmanSocInit();                                // 卡尔曼SOC参考算法初始化(仅参考,不参与策略)
 #ifdef CAN_SW_PROTOCOL
     SwCanInit();
 #endif
@@ -293,6 +295,7 @@ int main(void)
 #ifdef SOC_SUPPORT
         SocCtrl();
 #endif
+   //     KalmanSocRun();                             // 卡尔曼SOC参考算法(仅参考,不参与策略)
 #ifdef CAN_OTA_SL
 		OtaSlJudge();
 #endif
