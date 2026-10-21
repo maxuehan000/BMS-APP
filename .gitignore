@@ -118,3 +118,6 @@ JLinkLog.txt
 # ---> 本机个人配置（含绝对路径，不入库；.vscode/c_cpp_properties.json 除外）
 .vscode/settings.json
 
+# ---> CodeGraph 本地索引（按机器生成，不入库）
+.codegraph/
+

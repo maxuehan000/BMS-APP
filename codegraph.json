@@ -1,0 +1,6 @@
+{
+  "exclude": [
+    "CMSIS/core/arm_math.h",
+    "CMSIS/device/n32l40x.h"
+  ]
+}
