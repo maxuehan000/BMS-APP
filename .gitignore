@@ -1,0 +1,25 @@
+# Keil MDK build outputs
+MDK_ARM/Listings/
+MDK_ARM/Objects/
+
+# Keil personal / machine-specific settings
+*.uvguix.*
+JLinkLog.txt
+*.log
+
+# Local IDE config with absolute paths
+.vscode/settings.json
+
+# CodeGraph local index
+.codegraph/
+
+# Generic build artifacts
+*.o
+*.d
+*.crf
+*.axf
+*.elf
+*.hex
+*.map
+*.lst
+*.dep

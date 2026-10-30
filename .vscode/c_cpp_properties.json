@@ -1,0 +1,29 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "MDK-ARM",
+            "includePath": [
+                "${workspaceFolder}/Source/**",
+                "D:/Keil_v5/ARM/ARMCC/include"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/Source",
+                    "D:/Keil_v5/ARM/ARMCC/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "defines": [
+                "__CC_ARM",
+                "__arm__",
+                "N32G45X",
+                "USE_STDPERIPH_DRIVER",
+                "__attribute__(x)="
+            ],
+            "cStandard": "c99",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "windows-gcc-arm"
+        }
+    ]
+}
