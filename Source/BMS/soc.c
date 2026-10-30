@@ -113,6 +113,36 @@ const SOC_2_OCV SocOcvRealTbl[5][10] =
     { {0, 2750}, {5, 2879}, {8, 3004}, {12, 3085}, {15, 3121}, {85, 4053}, {89, 4085}, {93, 4123}, {97, 4152}, {100, 4170}},  //20A
     { {0, 2750}, {5, 2868}, {8, 2974}, {12, 3038}, {15, 3063}, {85, 4053}, {89, 4085}, {93, 4123}, {97, 4152}, {100, 4170} }, //25A
 };
+
+#elif (BAT_TYPE==BAT_EVE_11AL)
+/* EVE INR27107/11AL 规格书 2.3 SOC-OCV@25℃: 0.2C放电至不同SOC, 0.05C截止, 静置1h后测OCV */
+#define OCV_NUM     21
+const SOC_2_OCV SocOcvTbl[OCV_NUM] =
+{
+    {0, 3000},  {5, 3170},  {10, 3260}, {15, 3340}, {20, 3410},     // 5
+    {25, 3480}, {30, 3540}, {35, 3590}, {40, 3640}, {45, 3690},     // 10
+    {50, 3750}, {55, 3800}, {60, 3840}, {65, 3880}, {70, 3930},     // 15
+    {75, 3990}, {80, 4050}, {85, 4070}, {90, 4080}, {95, 4090},     // 20
+    {100, 4160}
+};
+/* EVE INR27107/11AL 端子电压-SOC 曲线(规格书 2.5 充电@25℃ / 2.6 放电@25℃)
+   列: SOC 0/4/8/12/15 % (放电末端修正) 与 85/89/93/97/100 % (充电末端修正)
+   行: 对应 SocToIndex() 的电流档位(Pack电流), 13S2P 单并电流 = Pack/2
+        Pack: 0-2.5A/2.5-7.5A/7.5-12.5A/12.5-17.5A/17.5-22.5A/22.5-27.5A/27.5-35A/>35A
+        单并倍率: 0.22C / 0.44C / 0.67C / 0.89C / 1.11C / 1.39C / 3C
+        0行: 充电0.33C(高SOC段) / 放电0.2C(低SOC段)
+   TODO: 本表由规格书曲线换算得到, 待台架人工标定后按实测再修正 */
+const SOC_2_OCV SocOcvRealTbl[8][10] =
+{
+    { {0,2500}, {4,2839}, {8,3021}, {12,3131}, {15,3189}, {85,4108}, {89,4119}, {93,4134}, {97,4166}, {100,4180} },  // 充电0.33C
+    { {0,2500}, {4,2839}, {8,3021}, {12,3131}, {15,3189}, {85,4051}, {89,4060}, {93,4071}, {97,4094}, {100,4175} },  // 0.22C
+    { {0,2500}, {4,2862}, {8,3036}, {12,3134}, {15,3191}, {85,4030}, {89,4041}, {93,4055}, {97,4077}, {100,4170} },  // 0.44C
+    { {0,2500}, {4,2864}, {8,3033}, {12,3129}, {15,3186}, {85,4012}, {89,4024}, {93,4040}, {97,4062}, {100,4161} },  // 0.67C
+    { {0,2500}, {4,2861}, {8,3027}, {12,3122}, {15,3179}, {85,3995}, {89,4009}, {93,4026}, {97,4048}, {100,4150} },  // 0.89C
+    { {0,2500}, {4,2860}, {8,3024}, {12,3119}, {15,3176}, {85,3986}, {89,4001}, {93,4019}, {97,4041}, {100,4145} },  // 1.11C
+    { {0,2500}, {4,2844}, {8,3007}, {12,3103}, {15,3161}, {85,3965}, {89,3980}, {93,3998}, {97,4021}, {100,4133} },  // 1.39C
+    { {0,2500}, {4,2778}, {8,2935}, {12,3039}, {15,3101}, {85,3876}, {89,3892}, {93,3910}, {97,3936}, {100,4083} },  // 3C
+};
 #else
 #error "no suitable battery type for SOC"
 #endif
@@ -230,10 +260,19 @@ void SocUpdateByCap(u16 DsgmAh)
 }
 
 #define CYCLE_SOH_NUM			5
+#if (BAT_TYPE==BAT_EVE_11AL)
+/* EVE INR27107/11AL 规格书 2.9: 1C/1C @25℃ 0%-100%SOC 能量保持率
+   0/100/200/300/400/500 cycle: 100.00% 98.60% 97.20% 95.70% 94.20% 92.60% */
+const u8 Cycle2Soh[CYCLE_SOH_NUM] = 
+{
+	1, 1, 2, 2, 2				// 100-200-300-400-500cycle SOH decent
+};
+#else
 const u8 Cycle2Soh[CYCLE_SOH_NUM] = 
 {
 	5, 6, 7, 10, 12				// 100-200-300-400-500cycle SOH decent
 };
+#endif
 
 static void SocSohCaculte(void)
 {
@@ -526,7 +565,8 @@ static void SocIntegrate(u16 deltaTime, s32 cur)
         temp = (u32)(InterCur * TimeMs);
         DataFlashPowerDownSave.Soc.SocImAms += temp;                                /* 电量累加 */
 
-        if(DataFlashPowerDownSave.Soc.SocImAms > MAMS_TO_MAH)
+        /* 大电流时单次可充入多个mAH, 需循环累加, 否则SocImAms累积溢出 */
+        while(DataFlashPowerDownSave.Soc.SocImAms >= MAMS_TO_MAH)
         {
             if(DataFlashPowerDownSave.Soc.Rmc < CAPACITY_DESIGN)
             {
@@ -539,7 +579,7 @@ static void SocIntegrate(u16 deltaTime, s32 cur)
 #ifdef SOC_1MAH_SMOOTH
         DataFlashPowerDownSave.Soc.SocImAmsDisp += temp;                                // 电量累加
 
-        if(DataFlashPowerDownSave.Soc.SocImAmsDisp > Dynamic1mAh)
+        while(DataFlashPowerDownSave.Soc.SocImAmsDisp >= Dynamic1mAh)
         {
             if(DataFlashPowerDownSave.Soc.RmcDisp < (DataFlashPowerDownSave.Soc.Fcc - (DataFlashPowerDownSave.Soc.Fcc >> 7)))
             {
@@ -591,10 +631,15 @@ static void SocIntegrate(u16 deltaTime, s32 cur)
 static u16 SocCycle2Fcc(void)
 {
 	/* 循环次数衰减数据 cycle:   0     100   200   300   400   500   */ 
+#if (BAT_TYPE==BAT_EVE_11AL)
+	/* EVE INR27107/11AL 规格书 2.9: 1C/1C @25℃ 0%-100%SOC 能量保持率 (800th 86.70%) */
+	const u16 Cycle2SohTbl[6] = {1000, 986,  972,  957,  942,  926};
+#else
 #ifdef CYCLE_DSG_HIGH_RATE
 	const u16 Cycle2SohTbl[6] = {1000, 950,  850,  750,  650,  600};      // 吸尘器产品: 0.5C充电, 5-8C放电
 #else
 	const u16 Cycle2SohTbl[6] = {1000, 970,  940,  920,  900,  880};      // 洗地机产品: 0.5C充电, 2-3C放电
+#endif
 #endif
 	#define  CYCLE_INDEX   100
 	#define  CYCLE_MAX     (CYCLE_INDEX*(sizeof(Cycle2SohTbl)/sizeof(Cycle2SohTbl[0])-1))

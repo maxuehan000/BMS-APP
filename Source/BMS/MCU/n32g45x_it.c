@@ -161,7 +161,7 @@ void SysTick_Handler(void)
 {
 	static u8 RgbTick10ms = 0;
 	SysTickTimer++;
-	if (++RgbTick10ms >= TIMEBASE_LOOP)   /* 10ms ¶¨Ê±Ë¢ÐÂ RGB */
+	if (++RgbTick10ms >= TIMEBASE_LOOP)   /* 10ms ???? RGB */
 	{
 		RgbTick10ms = 0;
 		RGBPwmUp();
@@ -370,25 +370,23 @@ void EXTI15_10_IRQHandler(void)
 
 void RTC_WKUP_IRQHandler(void)
 {
-//	if (BatStatus.Bits.Sleep)
-//	{
-//		Tick1msIntCnt = 0;
-//		CanIntCnt = 0;
-//		RtcIntCnt = 0;
-//		UartIntCnt = 0;
-//	}
-//	else
-//	{
-//		RtcIntCnt++;
-//	}
-//	if (RESET!=RTC_GetITStatus(RTC_INT_WUT) || RESET!=EXTI_GetITStatus(EXTI_LINE20))
-//	{  	     
-//		Rtc1STick = 1;
-//	//	SYSTEM_TIME++;
-//    	
-//		RTC_ClrIntPendingBit(RTC_INT_WUT);
-//		EXTI_ClrITPendBit(EXTI_LINE20);
-//	}
+	if (BatStatus.Bits.Sleep)
+	{
+		Tick1msIntCnt = 0;
+		CanIntCnt = 0;
+		RtcIntCnt = 0;
+		UartIntCnt = 0;
+	}
+	else
+	{
+		RtcIntCnt++;
+	}
+	if (RESET!=RTC_GetITStatus(RTC_INT_WUT) || RESET!=EXTI_GetITStatus(EXTI_LINE20))
+	{
+		Rtc1STick = 1;
+		RTC_ClrIntPendingBit(RTC_INT_WUT);
+		EXTI_ClrITPendBit(EXTI_LINE20);
+	}
 }
 
 

@@ -136,12 +136,13 @@ static void BmsModeCheck(void)
  输入参数  :
  返 回 值  :
 *****************************************************************************/
+static u8 DisAct = 0;
+static u8 PreDisStep = 0;
+static u16 PreDisTimer = 0;
+
 void BmsMosCheck(void)
 {
-	u8 DisAct = 0;
-	static u8 PreDisStep = 0;
-    static u16 PreDisTimer = 0;
-//	static u16 PreDisShortCnt1 = 0;
+	static u16 PreDisShortCnt1 = 0;
 
 	if (!BatData.Valid)
 	{
@@ -188,25 +189,25 @@ void BmsMosCheck(void)
 				BatStatus.Bits.Dmos = 0;
 				if(PreDisTimer < 2)							// 前20ms不检测
 				{
-//					PreDisShortCnt1 = 0;
+					PreDisShortCnt1 = 0;
 				}
 				else
 				{
-//					if(BatData.VolPack < 5000)				// 总压小于5V判定为短路
-//					{
-//						PreDisShortCnt1++;
-//						
-//						if(PreDisShortCnt1 > 36)			// 36*10ms = 360ms异常则报错
-//						{
+					if(BatData.VolPack < 5000)				// 总压小于5V判定为短路
+					{
+						PreDisShortCnt1++;
+						
+						if(PreDisShortCnt1 > 36)			// 36*10ms = 360ms异常则报错
+						{
 
-//							
-//							BatStatus.Bits.DisSC = 1;
-//							BatStatus.Bits.DisOC = 1;
-//							BatStatus.Bits.PDmos = 0;
-//							BatStatus.Bits.Dmos = 0;
-//							PreDisTimer = 0;
-//						}
-//					}
+							
+							BatStatus.Bits.DisSC = 1;
+							BatStatus.Bits.DisOC = 1;
+							BatStatus.Bits.PDmos = 0;
+							BatStatus.Bits.Dmos = 0;
+							PreDisTimer = 0;
+						}
+					}
 
 				}
 				
@@ -283,6 +284,20 @@ void BmsMosCheck(void)
 				BatStatus.Bits.Cmos = 1;                        	// 快开充电mos
 		}
 	}
+}
+
+/* 调试导出: 供 UartDebug 打印 MOS 状态机内部量 */
+u8 BmsDbgDisAct(void)
+{
+	return DisAct;
+}
+u8 BmsDbgPreDisStep(void)
+{
+	return PreDisStep;
+}
+u16 BmsDbgPreDisTimer(void)
+{
+	return PreDisTimer;
 }
 
 /*****************************************************************************

@@ -50,18 +50,18 @@ typedef uint8_t			bit;
 
 
 #define BAT_SDI_50P				5
-
+#define BAT_EVE_11AL			6           /* EVE INR27107/11AL */
 
 
 #if 1		
 #define PROJ_XHT
-#define BAT_TYPE				BAT_SDI_50P
+#define BAT_TYPE				BAT_EVE_11AL
 #define SW_VERSION				"26EN001-01-b7"
 #define HW_VERSION				"XHT-13S2P-0A"
 #define SW_SUBVERSION     		0x0000
 #define HW_SUBVERSION    		0
 
-#define CELL_PARAL				3					// 13S3P
+#define CELL_PARAL				2					// 13S2P
 
 #endif
 

@@ -65,7 +65,7 @@ extern "C" {
 #include "CanUpgradeBW.h"
 #endif
 
-//#define USE_MCU_RTC
+#define USE_MCU_RTC
 //#define USE_CHIP_RTC
 
 #define I2C_AFE_INDEX			SW_I2C0

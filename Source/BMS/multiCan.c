@@ -694,14 +694,14 @@ typedef union
 }unionmultiCondition;
 void ChgMultclrSmall(void);/*多包并联情况下，检测到其他包处于充电中，需调用该函数清除小电流判断*/
 static unionmultiCondition  multiCondition;
+static u8 delaydison, delaydisoff;   /* 调试导出: 放电MOS开/关延时计数 */
 void  MtBmsControlJudge(void)
 {
     u8 i;
     u8 multipacknum = 0;
     u8 multidison = 0;
     u16 multimaxpackvol,multiminpackvol; /*并包的最大最小电压*/
-    static u8 multiokDelay,delaydison,delaydisoff,delayhavelvtodison,delaychgon,delaychgoff,delayhavehvtochgon;
-    static unionmultiCondition  multiCondition;
+    static u8 multiokDelay,delayhavelvtodison,delaychgon,delaychgoff,delayhavehvtochgon;
     s32 crv,mycrv;
     static u8 mtosDelay;  /*双包转单包的延时计数*/
     static u8 dmosofftoondelay;  /*dmos关闭后再开延迟加长*/
@@ -1370,10 +1370,6 @@ void  MtBmsControlJudge(void)
             MtBmsAllow.bit.ChgMosAllow=1;
         }
     }
-
-
-    MtBmsAllow.bit.DisMosAllow=1;
-    MtBmsAllow.bit.ChgMosAllow=1;
 
 	if(BatStatus.Bits.DetIn_Test == 1 && BatStatus.Bits.ChgPlugin && BatStatus.Bits.CanErr)
 	{
@@ -2093,6 +2089,28 @@ u8 ReadMtOutputState(void)
 u8 ReadMtChgPluginState(void)
 {
 	return Mt_ChgPlugin;
+}
+
+/* 调试导出: 供 UartDebug 打印并包控制内部量 */
+u8 ReadMtOkMark(void)
+{
+	return MT_OkMark;
+}
+u8 ReadSingleBatFlag(void)
+{
+	return multiCondition.bit.singlebat;
+}
+u8 ReadIsMinBatFlag(void)
+{
+	return multiCondition.bit.isminbat;
+}
+u8 ReadDisOnDelay(void)
+{
+	return delaydison;
+}
+u8 ReadDisOffDelay(void)
+{
+	return delaydisoff;
 }
 /*增加针对单包且mos开启，休眠后再唤醒，置位一个标志SingleMosOnMark，当canerr置位不影响正常工作，直到id移除或单机标志解除或有电流*/
 /*当前单包且休眠前dmos处于开启,则自主唤醒不识别canerr  SingleMosOnMark缓冲在Batstatusbakcheck[3];*/

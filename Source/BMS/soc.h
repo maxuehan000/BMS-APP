@@ -48,6 +48,9 @@
 #elif (BAT_TYPE==BAT_EVE_33V)
 #define CAPACITY_DESIGN             (3200*BAT_PARAL_NUM)    /* 电芯设定容量，单位: mAh */
 #define CAPACITY_TYPE				(3050*BAT_PARAL_NUM)
+#elif (BAT_TYPE==BAT_EVE_11AL)
+#define CAPACITY_DESIGN             (11250*BAT_PARAL_NUM)   /* 电芯设定容量，单位: mAh  EVE INR27107/11AL 标称11.25Ah */
+#define CAPACITY_TYPE				(10700*BAT_PARAL_NUM)
 #endif
 
 #define FCC_UPDATE_MAX              (u16)(CAPACITY_DESIGN*0.01)         /* 1%步进量 */
@@ -70,8 +73,8 @@
 #define MAMS_TO_MAH                 (3600000L)              	/* 1000ms*60*60 = 3600000 ->1mAH */
 #define SOC_CUR_TIME_MAX            (400)       				/* SOC计算的最大时间间隔，单位: ms，BQ系列电流采样时间250ms */
 
-#define SOC_CHG_CUR_MAX             (  40000L)                	/* SOC可检测最大充电电流 */
-#define SOC_DIS_CUR_MAX             (-150000L)                   /* SOC可检测最大放电电流 */
+#define SOC_CHG_CUR_MAX             (  55000L)                	/* SOC可检测最大充电电流, 需大于CHG_OVER_CUR2(52A) */
+#define SOC_DIS_CUR_MAX             (-180000L)                   /* SOC可检测最大放电电流, 需小于DIS_OVER_CUR4(180A) */
 
 #define OCV_INIT_SET		0
 #define OCV_STATIC_SET		1

@@ -12,6 +12,7 @@
 #include "PowerCtrl.h"
 #include "UartBW.h"
 #include "BmsCtrl.h"
+#include "multican.h"
 #include "Calib.h"
 #include "Interface.h"
 #ifdef UART_CLIENT
@@ -354,6 +355,27 @@ void UartDebug(void)
     
    // UartBmsRxDisable();
 
+	/* RTC real-time test print */
+	{
+		RTC_TIME_S rtc;
+		RtcTimeRead(&rtc);
+		UartSendStr("RTC: 20");
+		UartSendStrData(rtc.year, 10);
+		UartSendStr("-");
+		UartSendStrData(rtc.month, 10);
+		UartSendStr("-");
+		UartSendStrData(rtc.day, 10);
+		UartSendStr(" ");
+		UartSendStrData(rtc.hour, 10);
+		UartSendStr(":");
+		UartSendStrData(rtc.minute, 10);
+		UartSendStr(":");
+		UartSendStrData(rtc.second, 10);
+		UartSendStr("  Wk");
+		UartSendStrData(rtc.week, 10);
+		UartSendStr("\r\n");
+	}
+
 	UartSendStr("XHT: ");
 	
 	UartSendStrData(GetDetId(), 16);
@@ -424,7 +446,7 @@ void UartDebug(void)
 	UartSendStr("  ");
 	UartSendStrData((MosNtcTemp[1]-TMP_0C_01K)/10, 10);
 	UartSendStr("  ");
-
+*/
 	UartSendStr(" MOS ");                           // 三个MOS实际开启状态: 预放 放电 充电
 #ifdef AFE_MODEULE
 	UartSendStrData((BatStatus.Bits.PDmos && AfeStatus.Bits.PDSG_EN), 10);
@@ -440,7 +462,7 @@ void UartDebug(void)
 	UartSendStrData(BatStatus.Bits.Cmos, 10);
 #endif
 	UartSendStr("  ");
-*/
+
 #if 0
 
 	UartSendStr(" S ");
@@ -501,6 +523,47 @@ void UartDebug(void)
 	UartSendStr(" ");
 	UartSendStrData(DisCurAvg, 10);
 #endif
+
+	UartSendStr(" DBG M=");
+	UartSendStrData(MtBmsAllow.byte, 16);        // bit0 DisMosAllow bit1 ChgMosAllow
+	UartSendStr(" Dsg=");
+	UartSendStrData(BatStatus.Bits.DsgAble, 10);
+	UartSendStr(" Dis=");
+	UartSendStrData(BatStatus.Bits.Dis, 10);
+	UartSendStr(" Chg=");
+	UartSendStrData(BatStatus.Bits.Chg, 10);
+	UartSendStr(" Act=");
+	UartSendStrData(BmsDbgDisAct(), 10);
+	UartSendStr(" St=");
+	UartSendStrData(BmsDbgPreDisStep(), 10);
+	UartSendStr(" T=");
+	UartSendStrData(BmsDbgPreDisTimer(), 10);
+	UartSendStr(" dOn=");
+	UartSendStrData(ReadDisOnDelay(), 10);
+	UartSendStr(" dOff=");
+	UartSendStrData(ReadDisOffDelay(), 10);
+	UartSendStr(" OK=");
+	UartSendStrData(ReadMtOkMark(), 16);
+	UartSendStr(" sbat=");
+	UartSendStrData(ReadSingleBatFlag(), 10);
+	UartSendStr(" P=");
+	UartSendStrData(BatStatus.Bytes.DisProt, 16);
+	UartSendStr(" C=");
+	UartSendStrData(BatStatus.Bytes.ChgProt, 16);
+	UartSendStr(" H=");
+	UartSendStrData(BatStatus.Bytes.HardFault, 16);
+	UartSendStr(" Valid=");
+	UartSendStrData(BatData.Valid, 10);
+	UartSendStr(" vmin=");
+	UartSendStrData(BatData.VolMin, 10);
+	UartSendStr(" vt=");
+	UartSendStrData(BatData.VolTotal, 10);
+	UartSendStr(" vp=");
+	UartSendStrData(BatData.VolPack, 10);
+	UartSendStr(" ntcmax=");
+	UartSendStrData(BatNtcTempMax, 10);
+	UartSendStr(" ntcmin=");
+	UartSendStrData(BatNtcTempMin, 10);
 
 	UartSendStr(" L ");
 	UartSendStrData(gLedTrigger, 10);

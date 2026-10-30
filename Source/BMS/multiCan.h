@@ -68,6 +68,11 @@ extern void HwCompInit(void);
 
 extern u8 ReadMtOutputState(void);
 extern u8 ReadMtChgPluginState(void);
+extern u8 ReadMtOkMark(void);
+extern u8 ReadSingleBatFlag(void);
+extern u8 ReadIsMinBatFlag(void);
+extern u8 ReadDisOnDelay(void);
+extern u8 ReadDisOffDelay(void);
 /*当前单包且休眠前dmos处于开启,则自主唤醒不识别canerr*/
 extern u8 SingleAndMosOnCheck(void);
 extern void SetSingleMosOnState(void);

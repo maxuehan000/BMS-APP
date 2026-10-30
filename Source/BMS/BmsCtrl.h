@@ -76,5 +76,10 @@ extern void BctTimerCallBack(u8 ticks);
 extern void BmsCtrl(void);
 extern _BMS_WORK_MODE_T BmsGetWorkMode(void);
 
+/* 调试导出: 供 UartDebug 打印 MOS 状态机内部量 */
+extern u8 BmsDbgDisAct(void);
+extern u8 BmsDbgPreDisStep(void);
+extern u16 BmsDbgPreDisTimer(void);
+
 
 #endif

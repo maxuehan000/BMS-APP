@@ -941,7 +941,7 @@ u8 SpiTransmitBuffer(SPI_Module* SpiDev, u8 NumSend, u8 *Sbuf,u8 NumRec, u8 *Rbu
 #ifdef USE_MCU_RTC
 /*****************************************************************************
  函 数 名  : HwRtcInit
- 功能描述  : MCU内部RTC初始化(外部低速时钟32.768KHz),设定1S周期唤醒中断
+ 功能描述  : MCU内部RTC初始化(外部低速时钟32.768KHz),不使能唤醒中断
  输入参数  : void
  返 回 值  :
 *****************************************************************************/
@@ -977,21 +977,21 @@ void HwRtcInit(void)
 	EXTI_InitStructure.EXTI_Line = EXTI_LINE20;
 	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
 	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
-	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_InitStructure.EXTI_LineCmd = DISABLE;
 	EXTI_InitPeripheral(&EXTI_InitStructure);
 	/* Enable the RTC WakeUp Interrupt */
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); // 2 bits for pre-emption priority,2 bits for subpriority
 	NVIC_InitStructure.NVIC_IRQChannel					 = RTC_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority		 = 2;
-	NVIC_InitStructure.NVIC_IRQChannelCmd				 = ENABLE;
+	NVIC_InitStructure.NVIC_IRQChannelCmd				 = DISABLE;
 	NVIC_Init(&NVIC_InitStructure);
 #endif
 
-	/* Enable the RTC Wakeup Interrupt */
-	RTC_ConfigInt(RTC_INT_WUT, ENABLE);
+	/* Disable the RTC Wakeup Interrupt */
+	RTC_ConfigInt(RTC_INT_WUT, DISABLE);
 
-	RTC_EnableWakeUp(ENABLE);
+	RTC_EnableWakeUp(DISABLE);
 #if 1
 	RTC_GetDate(RTC_FORMAT_BIN, &RtcDateInit);
 	if (RtcDateInit.Year < 24)
@@ -1735,7 +1735,7 @@ void HwMcuInit(void)
 	UartInit();
 //	HwCompOpamInit();
 #ifdef USE_MCU_RTC
-//	HwRtcInit();
+	HwRtcInit();
 #endif
 //	McuWakeupConfig(ENABLE);
 

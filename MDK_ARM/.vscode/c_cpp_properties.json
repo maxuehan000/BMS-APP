@@ -3,18 +3,18 @@
         {
             "name": "N32G455",
             "includePath": [
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\CMSIS\\core",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\CMSIS\\device",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\n32g45x_algo_lib\\inc",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\n32g45x_std_periph_driver\\inc",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\BMS",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\BMS\\MCU",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\BMS\\AFE\\kc81710h",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\BMS\\AFE",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\CMSIS\\core",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\CMSIS\\device",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\n32g45x_algo_lib\\inc",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\n32g45x_std_periph_driver\\inc",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\BMS",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\BMS\\MCU",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\BMS\\AFE\\kc81710h",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\BMS\\AFE",
                 "D:\\Keil_v5\\ARM\\ARMCC\\include",
                 "D:\\Keil_v5\\ARM\\ARMCC\\include\\rw",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\CMSIS\\device\\startup",
-                "f:\\项目资料\\星海图\\src\\xht-nexo-13s2p\\Source\\n32g45x_std_periph_driver\\src"
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\CMSIS\\device\\startup",
+                "f:\\ProjDoc\\XHT\\src\\xht-nexo-13s2p\\Source\\n32g45x_std_periph_driver\\src"
             ],
             "defines": [
                 "N32G45X",

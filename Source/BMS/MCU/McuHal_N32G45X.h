@@ -34,6 +34,20 @@
 #define UPDATE_BASE_ADDR				(FLASH_BASE_ADDR+BOOT_LOADER_SIZE+UPDATE_FILE_MAX_LEN)
 
 
+typedef struct
+{
+	u8 year;		// year, e.g. 24 means 2024
+	u8 month;		// month 1-12
+	u8 day;			// day 1-31
+	u8 week;		// weekday 0-6
+	u8 hour_12_24;	// 1=24h format, 0=12h format
+	u8 ampm;		// 0=AM, 1=PM (12h format)
+	u8 hour;		// hour
+	u8 minute;		// minute
+	u8 second;		// second
+} RTC_TIME_S;
+
+
 typedef enum
 {
 	SW_I2C0 = 0,
@@ -86,6 +100,8 @@ extern u8 SpiTransmitBuffer(SPI_Module* SpiDev, u8 NumSend, u8 *Sbuf,u8 NumRec, 
 extern void HwSleepEnter(void);
 extern void HwSleepExit(void);
 extern void HwSleepWkupToggle(BW_ABLE_CMD cmd);
+extern void RtcTimeSet(RTC_TIME_S *RTC_Time);
+extern void RtcTimeRead(RTC_TIME_S *RTC_Time);
 
 #define SLEEP_NOW      0
 #define SLEEP_ON_EXIT  1

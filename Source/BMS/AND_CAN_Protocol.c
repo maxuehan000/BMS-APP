@@ -894,19 +894,22 @@ void SlCanBmsReceiveProcess(void)
 //				}
 				break;
 			case 12: //RTC校准
-//				RTC_TIME_S CalTime = {0};
-//				
-//				CalTime.year = AndCanRxMsgNow.Data[1];
-//				CalTime.month = AndCanRxMsgNow.Data[2];
-//				CalTime.week = AndCanRxMsgNow.Data[3];
-//				CalTime.day = AndCanRxMsgNow.Data[4];
-//				CalTime.hour = AndCanRxMsgNow.Data[5];
-//				CalTime.minute = AndCanRxMsgNow.Data[6];
-//				CalTime.second = AndCanRxMsgNow.Data[7];
+			{
+				RTC_TIME_S CalTime = {0};
 
-//				RtcTimeSet(&CalTime);
-//			
-//				SL_CanBmsMsgTransmit(STD_BMS_ACK12);
+				CalTime.year = AndCanRxMsgNow.Data[1];
+				CalTime.month = AndCanRxMsgNow.Data[2];
+				CalTime.week = AndCanRxMsgNow.Data[3];
+				CalTime.day = AndCanRxMsgNow.Data[4];
+				CalTime.hour = AndCanRxMsgNow.Data[5];
+				CalTime.minute = AndCanRxMsgNow.Data[6];
+				CalTime.second = AndCanRxMsgNow.Data[7];
+				CalTime.hour_12_24 = 1;		// 24h format
+
+				RtcTimeSet(&CalTime);
+
+				SL_CanBmsMsgTransmit(STD_BMS_ACK12);
+			}
 				break;
 			case 13: //查询电池包型号
 				SL_CanBmsMsgTransmit(STD_BMS_ACK13);
@@ -981,6 +984,7 @@ void AndCanTransmitProcess(void)
 
 			SL_CanBmsMsgTransmit(STD_BMS_INFO2);
 			SL_CanBmsMsgTransmit(STD_BMS_INFO3);
+			SL_CanBmsMsgTransmit(STD_BMS_INFO4);
 
 #if 0
 			/* V1.1 充电器通讯: 超时处理 */
