@@ -155,6 +155,21 @@ void AfeFetCtrl(void)
     	FetCmd += ((u8)BatStatus.Bits.Cmos)<<1;
     }
     
+    // 放电/充电 MOS 失效锁存清除：DSG_FAIL/CHG_FAIL 触发后 AFE 会强制关 MOS，
+    // 软件必须显式 release 并重写 SWFET，否则 MOS 一直锁在关闭态。
+    if(AfeStatus.Bits.DSG_FAIL_STATUS || AfeStatus.Bits.CHG_FAIL_STATUS)
+    {
+    	if(AfeStatus.Bits.DSG_FAIL_STATUS)
+    	{
+    		kc81710h_dsg_fail_release();
+    	}
+    	if(AfeStatus.Bits.CHG_FAIL_STATUS)
+    	{
+    		kc81710h_chg_fail_release();
+    	}
+    	LastCmd = 0xFF;		// 强制重写 SWFET
+    }
+
     if (FetCmd != LastCmd)
 	{
 		if( KC_STATUS_OK == AfeSetMosfet(FetCmd) )

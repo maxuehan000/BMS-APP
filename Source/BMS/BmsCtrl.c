@@ -142,7 +142,7 @@ static u16 PreDisTimer = 0;
 
 void BmsMosCheck(void)
 {
-	static u16 PreDisShortCnt1 = 0;
+//	static u16 PreDisShortCnt1 = 0;
 
 	if (!BatData.Valid)
 	{
@@ -189,26 +189,26 @@ void BmsMosCheck(void)
 				BatStatus.Bits.Dmos = 0;
 				if(PreDisTimer < 2)							// 前20ms不检测
 				{
-					PreDisShortCnt1 = 0;
+//					PreDisShortCnt1 = 0;
 				}
 				else
 				{
-					if(BatData.VolPack < 5000)				// 总压小于5V判定为短路
-					{
-						PreDisShortCnt1++;
-						
-						if(PreDisShortCnt1 > 36)			// 36*10ms = 360ms异常则报错
-						{
-
-							
-							BatStatus.Bits.DisSC = 1;
-							BatStatus.Bits.DisOC = 1;
-							BatStatus.Bits.PDmos = 0;
-							BatStatus.Bits.Dmos = 0;
-							PreDisTimer = 0;
-						}
-					}
-
+//					if(BatData.VolPack < 5000)				// 总压小于5V判定为短路
+//					{
+//						PreDisShortCnt1++;
+//						
+//						if(PreDisShortCnt1 > 36)			// 36*10ms = 360ms异常则报错
+//						{
+//
+//							
+//							BatStatus.Bits.DisSC = 1;
+//							BatStatus.Bits.DisOC = 1;
+//							BatStatus.Bits.PDmos = 0;
+//							BatStatus.Bits.Dmos = 0;
+//							PreDisTimer = 0;
+//						}
+//					}
+//
 				}
 				
 				if(ReadMtOutputState() == 1)				// 检测到外部已开启放电,直接转主放电Mos

@@ -1371,6 +1371,10 @@ void  MtBmsControlJudge(void)
         }
     }
 
+
+    MtBmsAllow.bit.DisMosAllow=1;
+    MtBmsAllow.bit.ChgMosAllow=1;
+
 	if(BatStatus.Bits.DetIn_Test == 1 && BatStatus.Bits.ChgPlugin && BatStatus.Bits.CanErr)
 	{
 		MtBmsAllow.bit.DisMosAllow=1;

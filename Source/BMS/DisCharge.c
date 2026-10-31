@@ -141,25 +141,25 @@ void DisUVCheck(void)
 		return;
 	}
 
-	if (DisCurAvg > DIS_UNLOAD_CUR)
-	{
+//	if (DisCurAvg > DIS_UNLOAD_CUR)
+//	{
 		over_bat = DIS_UNDER_VOL;
 		over_time = DIS_UNDER_VOL_DELAY;
-	}
-	else if (BatStatus.Bits.Dis == 0)
-	{
-		over_bat = DIS_UNDER_VOL_RE;
-		over_time = DIS_UNDER_VOL_PRE_DELAY;
-	}
-	else
-	{
-		over_bat = DIS_UV_UNLOAD_VOL;
-		over_time = DIS_UV_POWER_OFF_DELAY;
-		if (BatData.VolMin < DIS_UNDER_VOL)
-		{
-			over_time = DIS_UNDER_VOL_DELAY;
-		}
-	}
+//	}
+//	else if (BatStatus.Bits.Dis == 0)
+//	{
+//		over_bat = DIS_UNDER_VOL_RE;
+//		over_time = DIS_UNDER_VOL_PRE_DELAY;
+//	}
+//	else
+//	{
+//		over_bat = DIS_UV_UNLOAD_VOL;
+//		over_time = DIS_UV_POWER_OFF_DELAY;
+//		if (BatData.VolMin < DIS_UNDER_VOL)
+//		{
+//			over_time = DIS_UNDER_VOL_DELAY;
+//		}
+//	}
 
 	// 过放检测，每节电芯均要做单独检测
 	for(i = 0; i < CELL_NUM; i++)

@@ -64,14 +64,14 @@
 // 字段定义
 #define KC81710H_OCD2_TH_DATA                   4       // OCD2_TH：50mV ≈ 151.5A
 #define KC81710H_OV_DELAY                       1       // OV_DLY：1s
-#define KC81710H_OCD1_DELAY                     3       // OCD1_DLY：4s
-#define KC81710H_OCD1_TH_DATA                   36      // OCD1_TH：36mV ≈ 109A
+#define KC81710H_OCD1_DELAY                     3       // OCD1_DLY：4s（对齐BMS保护阈值清单）
+#define KC81710H_OCD1_TH_DATA                   36      // OCD1_TH：36mV ≈ 109A（对齐BMS保护阈值清单）
 
 /* 位域说明
    [15:12] OCD2_TH[3:0] 放电过流2阈值, 范围 10~160mV, 步长 10mV    → 4 = 50mV
    [11:10] OV_DLY[1:0]  过压延时: 0/1/2/3 = 0.5/1/2/4s            → 1 = 1s
    [9:7]   OCD1_DLY[2:0]放电过流1延时: 0/1/2/3/4/5/6/7 = 0.5/1/2/4/8/16/32/48s → 3 = 4s
-   [6:0]   OCD1_TH[6:0] 放电过流1阈值, 范围 1~127mV, 步长 1mV, 全0=关闭 → 36 = 36mV
+   [6:0]   OCD1_TH[6:0] 放电过流1阈值, 范围 1~127mV, 步长 1mV, 全0=关闭 → 36 = 36mV(≈109A)
 */
 
 
@@ -80,14 +80,14 @@
 #define KC81710H_OCD2_DELAY                     9    	// OCD2_DLY：150ms
 #define KC81710H_OCC2_TH_DATA                   3       // OCC2_TH：20mV ≈ 60.6A
 #define KC81710H_OCC_RLS                        1       // OCC_RLS：需充移除恢复
-#define KC81710H_OCC1_TH_DATA                   17      // OCC1_TH：17mV ≈ 51.5A
+#define KC81710H_OCC1_TH_DATA                   17      // OCC1_TH：17mV ≈ 51.5A（对齐BMS保护阈值清单）
 
 /* 位域说明
    [15:12] OCD2_DLY[3:0] 放电过流2延时(16档): 2ms~800ms(0=2,1=5,2=10,3=20,4=30,5=40,6=60,7=80,
             8=100,9=150,10=200,11=300,12=400,13=500,14=600,15=800ms) → 9 = 150ms
    [11:8]  OCC2_TH[3:0] 充电过流2阈值, 范围 5~80mV, 步长 5mV      → 3 = 20mV
    [7]     OCC_RLS       0=内部32s定时恢复; 1=需充电器移除才恢复  → 1
-   [6:0]   OCC1_TH[6:0] 充电过流1阈值, 范围 1~127mV, 步长 1mV, 全0=关闭 → 17 = 17mV
+   [6:0]   OCC1_TH[6:0] 充电过流1阈值, 范围 1~127mV, 步长 1mV, 全0=关闭 → 17 = 17mV(≈51.5A)
 */
 
 
@@ -124,53 +124,53 @@
 // =============================== CFG6 (0x5A) ================================
 // 字段定义
 #define KC81710H_TS2_CFG                        3       // TS2_CFG：MOSFET温度
-#define KC81710H_UTC_TH_DATA                    3       // UTC_TH：24kΩ ≈ 3.3°C
+#define KC81710H_UTC_TH_DATA                    0x3F    // UTC_TH：84kΩ ≈ -24°C（对齐N32G455参考工程）
 #define KC81710H_DSG_SAFETY_RLS                 0       // DSG_RLS：定时/迟滞恢复
-#define KC81710H_UTD_TH_DATA                    17      // UTD_TH：60kΩ ≈ -17°C
+#define KC81710H_UTD_TH_DATA                    0x3F    // UTD_TH：152kΩ ≈ -36°C（对齐N32G455参考工程）
 
 /* 位域说明
    [15:14] HW_TS2_CFG[1:0] TS2用途: 00/01=AUX, 10=电芯温度, 11=外部MOSFET温度 → 3 = MOSFET温度
-   [13:8]  UTC_TH[5:0]   充电低温(UTC)阈值, 阻值=(21k+UTC_TH*1k), -24~6°C   → 3 = 24kΩ(~3°C)
+   [13:8]  UTC_TH[5:0]   充电低温(UTC)阈值, 阻值=(21k+UTC_TH*1k), -24~6°C   → 0x3F = 84kΩ(~-24°C)
    [7:6]   DSG_SAFETY_RLS[1:0] 放电管安全释放: 00=定时32s/迟滞恢复, 01=需负载移除,
             10=需ELOCK OFF, 11=负载移除或ELOCK OFF                         → 0 = 定时/迟滞恢复
-   [5:0]   UTD_TH[5:0]   放电低温(UTD)阈值, 阻值=(26k+UTD_TH*2k), -36~1°C   → 17 = 60kΩ(~-17°C)
+   [5:0]   UTD_TH[5:0]   放电低温(UTD)阈值, 阻值=(26k+UTD_TH*2k), -36~1°C   → 0x3F = 152kΩ(~-36°C)
 */
 
 
 // =============================== CFG7 (0x5B) ================================
 // 字段定义
-#define KC81710H_SOV_TH_DATA                    5       // SOV_TH：比OV高100mV（4.28V）
+#define KC81710H_SOV_TH_DATA                    5       // SOV_TH：OV+100mV = 4.28V（对齐BMS保护阈值清单）
 #define KC81710H_CLR_OV_LOW_VC17                1       // 低压清除OV/SOV
 #define KC81710H_ELKON_WKUP_EN                  0       // 禁电子锁唤醒
 #define KC81710H_LDON_WKUP_EN                   0       // 禁负载唤醒
 #define KC81710H_OTCUTC_RLS                     0       // 温度恢复即恢复
-#define KC81710H_UTCR_HYS_DATA                  1       // UTCR_HYS：2kΩ（恢复~4.9°C）
-#define KC81710H_UTDR_HYS_DATA                  5       // UTDR_HYS：12kΩ（恢复~-12°C）
+#define KC81710H_UTCR_HYS_DATA                  0       // UTCR_HYS：1kΩ（对齐N32G455参考工程）
+#define KC81710H_UTDR_HYS_DATA                  0       // UTDR_HYS：2kΩ（对齐N32G455参考工程）
 
 /* 位域说明
-   [15:12] SOV_TH[3:0]   二级过压(SOV)阈值, 比OV高 20~300mV, 步长20mV, 全0=关闭 → 5 = 高100mV
+   [15:12] SOV_TH[3:0]   二级过压(SOV)阈值, 比OV高 20~300mV, 步长20mV, 全0=关闭 → 5 = OV+100mV(4.28V)
    [11]    CLR_OV_LOW_VC17 1=VC17/n低于OW_START_TH时清除OV/SOV并停止检测; 0=照常 → 1
    [10]    HW_ELKON_WKUP_EN  1=Deep Sleep允许电子锁OFF→ON唤醒; 0=禁止            → 0
    [9]     HW_LDON_WKUP_EN  1=Deep Sleep允许负载插入唤醒; 0=禁止                → 0
    [8]     OTCUTC_RLS     1=需充电器移除才恢复OTC/UTC; 0=温度回到恢复点即恢复  → 0
-   [7:4]   UTCR_HYS[3:0]  恢复UTC滞回=(1k+UTCR_HYS*1k), 步长1k, 全0=无UTC      → 1 = 2kΩ
-   [3:0]   UTDR_HYS[3:0]  恢复UTD滞回=(2k+UTDR_HYS*2k), 步长2k, 全0=无UTD      → 5 = 12kΩ
+   [7:4]   UTCR_HYS[3:0]  恢复UTC滞回=(1k+UTCR_HYS*1k), 步长1k, 全0=无UTC      → 0 = 1kΩ
+   [3:0]   UTDR_HYS[3:0]  恢复UTD滞回=(2k+UTDR_HYS*2k), 步长2k, 全0=无UTD      → 0 = 2kΩ
 */
 
 
 // =============================== CFG8 (0x5C) ================================
 // 字段定义
 #define KC81710H_OCC2_DELAY                     6       // OCC2_DLY：10ms
-#define KC81710H_MOTR_HYS_DATA                  15      // MOTR_HYS：0.475kΩ（恢复75°C）
-#define KC81710H_MOT_DELAY                      1       // MOT_DLY：2s
-#define KC81710H_MOT_TH_DATA                    34      // MOT_TH：1.45kΩ ≈ 85°C
+#define KC81710H_MOTR_HYS_DATA                  15      // MOTR_HYS：0.475kΩ（恢复75°C，对齐BMS保护阈值清单）
+#define KC81710H_MOT_DELAY                      1       // MOT_DLY：2s（对齐BMS保护阈值清单）
+#define KC81710H_MOT_TH_DATA                    34      // MOT_TH：1.45kΩ ≈ 85°C（对齐BMS保护阈值清单）
 
 /* 位域说明
    [15:12] OCC2_DLY[3:0]  充电过流2延时(16档): 0.25/0.5/1/2/3/5/10/15/20/30/40/50/60/80/100/120ms
             → 6 = 10ms
-   [11:8]  MOTR_HYS[3:0] 退出MOT滞回=(0.1k+MOTR_HYS*0.025k), 步长0.025k, 全0=关闭MOT → 15 = 0.475kΩ
+   [11:8]  MOTR_HYS[3:0] 退出MOT滞回=(0.1k+MOTR_HYS*0.025k), 步长0.025k, 全0=关闭MOT → 15 = 0.475kΩ(恢复75°C)
    [7:6]   MOT_DLY[1:0]   MOSFET过温延时: 00/01/10/11 = 1/2/4/8s          → 1 = 2s
-   [5:0]   MOT_TH[5:0]   放电过温(MOT)阈值, 阻值=(0.6k+MOT_TH*0.025k), 71~120°C → 34 = 1.45kΩ(~85°C)
+   [5:0]   MOT_TH[5:0]   放电过温(MOT)阈值, 阻值=(0.6k+MOT_TH*0.025k), 71~120°C → 34 = 1.45kΩ(≈85°C)
 */
 
 
@@ -203,7 +203,7 @@
 #define KC81710H_AUTO_CRRTCHK_PERIOD            0       // 电流扫描125ms
 #define KC81710H_AUTO_TSCHK_PERIOD              1       // 温度扫描500ms
 #define KC81710H_LDO_MD                         1       // 1s检测100ms负载
-#define KC81710H_CELL_CNT                       7       // 电芯=17串
+#define KC81710H_CELL_CNT                       3       // 电芯=13串
 #define KC81710H_VADC_CELL_LSB                  1       // 电芯ADC 16bit
 
 /* 位域说明
@@ -215,7 +215,7 @@
    [6]     AUTO_CRRTCHK_PERIOD 0=电流扫描125ms; 1=250ms                → 0
    [5]     AUTO_TSCHK_PERIOD   0=温度扫描250ms; 1=500ms                → 1
    [4]     LDD_MD         0=持续检测负载; 1=每1s检测100ms              → 1
-   [3:1]   CELL_CNT[2:0] 电芯串数=N+10, 支持10~17串                    → 7 = 17串
+   [3:1]   CELL_CNT[2:0] 电芯串数=N+10, 支持10~17串                    → 3 = 13串
    [0]     VADC_CELL_LSB 0=14位精度; 1=16位精度(电芯/VC17通道)         → 1
 */
 

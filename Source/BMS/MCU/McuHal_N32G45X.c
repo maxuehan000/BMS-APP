@@ -495,10 +495,10 @@ void PortInit(void)
     ////////////////////////////////////////////////////////////
 
 	GPIO_ConfigPinRemap(GPIO_RMP2_CAN1, ENABLE);
-	/* CAN2 使用默认引脚 PB12(RX)/PB13(TX)，对应 CAN2_RMP=00，禁止 remap；
-	   GPIO_RMP1_CAN2 会把 CAN2 映射到 PB5/PB6，与 PortInit 配置的 PB12/PB13 脱节，
-	   导致 CAN2 报文发不出来，故注释掉该 remap。 */
-//	GPIO_ConfigPinRemap(GPIO_RMP1_CAN2, ENABLE);
+	/* CAN2 默认引脚即为 PB12(RX)/PB13(TX)，与 PortInit 配置的 CAN_RX2(PB12)/CAN_TX2(PB13) 一致，无需重映射。
+	   注意：GPIO_RMP1_CAN2 会把 CAN2 重映射到 PB5(RX)/PB6(TX)，反而导致 CAN2 RX 脱离 PB12、
+	   无法检测到 11 个连续隐性位而一直卡在初始化模式（INIAK=1）。 */
+	// GPIO_ConfigPinRemap(GPIO_RMP1_CAN2, ENABLE);
 
 //	GPIO_ConfigPinRemap(GPIO_RMP1_SPI2, ENABLE);
 
