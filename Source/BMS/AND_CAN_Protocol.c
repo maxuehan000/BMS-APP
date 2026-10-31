@@ -4,6 +4,13 @@
 
 #define BMS_BP_MASTER
 
+/*
+ * 调试用：把 CAN1 发出的报文同步转发一份到 CAN2（并包）总线上，
+ * 方便并包调试时上位机在 CAN2 这一路直接看 CAN1 的数据。
+ * 注意：CAN2 波特率为 1000K，上位机需按 1000K 接收。量产时注释掉此宏即可。
+ */
+#define CAN1_FORWARD_TO_CAN2
+
 #ifdef CAN_AND_PROTOCOL
 
 //#define AND_OTA_FUNC
@@ -1015,6 +1022,11 @@ void AndCanTransmitProcess(void)
 	{
 		return;			// no data in queue
 	}
+
+#ifdef CAN1_FORWARD_TO_CAN2
+	/* 调试模式：无条件把 CAN1 的帧转发到 CAN2 发送队列（不依赖 CAN1 是否发送成功） */
+	queue_push_back(MtTxQueue, &QueueMsg);
+#endif
 
 	if (CAN_TxSTS_NoMailBox == CAN_TransmitMessage(AND_CAN_DEV, &QueueMsg))
 	{

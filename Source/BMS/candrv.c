@@ -28,6 +28,9 @@ static u8 TimerCan1msFlag,TimerCan10msFlag;
 #define  MT_CAN_TBS2               CAN_TBS2_4tq
 #define  MT_CAN_PRESCALER          2
 
+/* 调试用：CAN2 持续发送测试帧 (ID=0x0E, 数据 AA BB CC DD EE FF 88 55)，用于验证 CAN2 链路。量产时注释掉。 */
+#define CAN2_TEST_FRAME
+
 /* CAN2 包间通信收发队列 */
 queue MtRxQueue = queue(CanRxMessage, 32);
 queue MtTxQueue = queue(CanTxMessage, 16);
@@ -150,11 +153,57 @@ void CanInit(void)
 	MtHwCanInit();
 }
 
+#ifdef CAN2_TEST_FRAME
+/* 调试用：CAN2 持续发送测试帧 (ID=0x0E, 数据 AA BB CC DD EE FF 88 55)，用于验证 CAN2 链路 */
+void Can2TestFrameSend(void)
+{
+    static u16 dbgCnt = 0;
+    CanTxMessage TxMsg;
+    u8 txResult;
+
+    TxMsg.ExtId = 0;
+    TxMsg.StdId = 0x0E;
+    TxMsg.IDE   = CAN_ID_STD;
+    TxMsg.RTR   = CAN_RTRQ_DATA;
+    TxMsg.DLC   = 8;
+    TxMsg.Data[0] = 0xAA;
+    TxMsg.Data[1] = 0xBB;
+    TxMsg.Data[2] = 0xCC;
+    TxMsg.Data[3] = 0xDD;
+    TxMsg.Data[4] = 0xEE;
+    TxMsg.Data[5] = 0xFF;
+    TxMsg.Data[6] = 0x88;
+    TxMsg.Data[7] = 0x55;
+
+    txResult = CAN_TransmitMessage(CAN2, &TxMsg);
+
+#ifdef UART_DEBUG
+    if (++dbgCnt >= 100)   /* 每 100 次(约 1 秒)打印一次 */
+    {
+        dbgCnt = 0;
+        UartSendStr((u8 *)"\r\n[CAN2]TX=");
+        UartSendStrData(txResult, 16);
+        UartSendStr((u8 *)" MSTS=");
+        UartSendStrData(CAN2->MSTS, 16);
+        UartSendStr((u8 *)" ESTS=");
+        UartSendStrData(CAN2->ESTS, 16);
+        UartSendStr((u8 *)" TSTS=");
+        UartSendStrData(CAN2->TSTS, 16);
+        UartSendStr((u8 *)"\r\n");
+    }
+#endif
+}
+#endif
+
 void CanCtrl(void)
 {
     if(TimerCan10msFlag)
     {
         TimerCan10msFlag = 0;
+
+#ifdef CAN2_TEST_FRAME
+        Can2TestFrameSend();
+#endif
 
 		if(BatStatus.Bits.PowerOff == 1) //关机不处理发送CAN数据
 			return;
