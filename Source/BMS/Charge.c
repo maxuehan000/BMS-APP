@@ -800,14 +800,10 @@ void ChgMosAbleUpdate(void)
 *****************************************************************************/
 u8 ChgStopFlag(void)
 {
-//	if(!BatStatus.Bits.ChgPlugin)
-//	{
-//		return 1;
-//	}
-//    if (!BatStatus.Bits.DetIn_charge)
-//    {
-//        return 1;
-//    }
+	if(!BatStatus.Bits.ChgPlugin)    // 无充电器接入，禁止充电（充电侧用充电器在位判断，不用 DetIn）
+	{
+		return 1;
+	}
 
     if(BatStatus.Bytes.ChgProt || BatStatus.Bytes.HardFault)
     {

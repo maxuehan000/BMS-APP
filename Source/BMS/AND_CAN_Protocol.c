@@ -901,6 +901,7 @@ void SlCanBmsReceiveProcess(void)
 //				}
 				break;
 			case 12: //RTC校准
+#ifdef USE_MCU_RTC
 			{
 				RTC_TIME_S CalTime = {0};
 
@@ -914,9 +915,9 @@ void SlCanBmsReceiveProcess(void)
 				CalTime.hour_12_24 = 1;		// 24h format
 
 				RtcTimeSet(&CalTime);
-
-				SL_CanBmsMsgTransmit(STD_BMS_ACK12);
 			}
+#endif
+				SL_CanBmsMsgTransmit(STD_BMS_ACK12);
 				break;
 			case 13: //查询电池包型号
 				SL_CanBmsMsgTransmit(STD_BMS_ACK13);

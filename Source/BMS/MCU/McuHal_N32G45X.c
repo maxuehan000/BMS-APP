@@ -1686,7 +1686,7 @@ void HwSleepEnter(void)
 
 	McuWakeupConfig(ENABLE);
 
-	McuRtcWakeUp(ENABLE);
+	McuRtcWakeUp(ENABLE);	/* 暂时关闭 RTC 定时唤醒 */
 
 	SysTick_Set(SystemCoreClock/1000, DISABLE);
 }

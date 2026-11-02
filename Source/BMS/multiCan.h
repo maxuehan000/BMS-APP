@@ -19,7 +19,7 @@
 
 #ifndef __MULTICAN_H__
 #define __MULTICAN_H__
-//////#define MULTIPLE_PARALLEL   /*注释-则进行并包*/
+//#define MULTIPLE_PARALLEL   /*注释-则进行并包*/
 #if 1
 //#define ADCOMPUTERIR        /*打开是AD采样来计算总内阻 */
 #ifndef ADCOMPUTERIR

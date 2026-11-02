@@ -178,7 +178,12 @@ void BmsMosCheck(void)
 	{
 		DisAct = 0;
 	}
-	
+
+	if (!BatStatus.Bits.DetIn)								// 无在位信号，禁止开放电Mos
+	{
+		DisAct = 0;
+	}
+
 	if(DisAct)												// 允许开Mos
 	{
 		switch(PreDisStep)

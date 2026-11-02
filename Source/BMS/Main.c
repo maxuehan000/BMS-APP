@@ -355,6 +355,7 @@ void UartDebug(void)
     
    // UartBmsRxDisable();
 
+#ifdef USE_MCU_RTC
 	/* RTC real-time test print */
 	{
 		RTC_TIME_S rtc;
@@ -375,6 +376,7 @@ void UartDebug(void)
 		UartSendStrData(rtc.week, 10);
 		UartSendStr("\r\n");
 	}
+#endif
 
 	UartSendStr("XHT: ");
 	
@@ -392,6 +394,16 @@ void UartDebug(void)
 	
 	UartSendStrData(KEY_ID2_IN(), 16);
 	UartSendStr("  ");
+
+	/* 在位检测信号: DetIn=在位状态  DetId=仓位ID  ID1/ID2=两个检测引脚原始电平 */
+	UartSendStr(" DET: DetIn=");
+	UartSendStrData(BatStatus.Bits.DetIn, 10);
+	UartSendStr(" DetId=");
+	UartSendStrData(GetDetId(), 10);
+	UartSendStr(" ID1=");
+	UartSendStrData(KEY_ID1_IN(), 10);
+	UartSendStr(" ID2=");
+	UartSendStrData(KEY_ID2_IN(), 10);
 
 	for(i = 0; i < CELL_NUM; i++)
 	{

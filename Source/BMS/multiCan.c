@@ -1371,10 +1371,10 @@ void  MtBmsControlJudge(void)
         }
     }
 
-
+#ifndef MULTIPLE_PARALLEL
     MtBmsAllow.bit.DisMosAllow=1;
     MtBmsAllow.bit.ChgMosAllow=1;
-
+#endif
 	if(BatStatus.Bits.DetIn_Test == 1 && BatStatus.Bits.ChgPlugin && BatStatus.Bits.CanErr)
 	{
 		MtBmsAllow.bit.DisMosAllow=1;
