@@ -19,9 +19,9 @@
 
 #ifndef __MULTICAN_H__
 #define __MULTICAN_H__
-//#define MULTIPLE_PARALLEL   /*注释-则进行并包*/
+//#define MULTIPLE_PARALLEL   /*不注释-则进行并包*/
 #if 1
-//#define ADCOMPUTERIR        /*打开是AD采样来计算总内阻 */
+#define ADCOMPUTERIR        /*打开是AD采样来计算总内阻 */
 #ifndef ADCOMPUTERIR
 #define AFECOMPUTERIR       /*打开是afe采样来计算单节内阻*/
 #endif
@@ -71,12 +71,16 @@ extern u8 ReadMtChgPluginState(void);
 extern u8 ReadMtOkMark(void);
 extern u8 ReadSingleBatFlag(void);
 extern u8 ReadIsMinBatFlag(void);
+extern u8 ReadIsMaxBatFlag(void);
 extern u8 ReadDisOnDelay(void);
 extern u8 ReadDisOffDelay(void);
+extern u8 ReadMyAddr(void);
 /*当前单包且休眠前dmos处于开启,则自主唤醒不识别canerr*/
 extern u8 SingleAndMosOnCheck(void);
 extern void SetSingleMosOnState(void);
 extern void ClearSingleMosOnState(void);
+/*主板(CAN1)有通讯时维持并包通讯，清零 NoMainTimer，防止超时停发*/
+extern void MultiCanHold(void);
 #endif
 
 

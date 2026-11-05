@@ -51,7 +51,7 @@ typedef signed long long int64_t;
  *****************************************************************************/
 // Basic configuration
 
-#define RSENSE                                  (330L) // uOhm  0.33mΩ采样电阻
+#define RSENSE                                  (333L) // uOhm  0.33mΩ采样电阻
 #define CELL_NUMBER                             (13)
 //#define MAX_COMBINED_VOLATILE_REGS			(4)
 

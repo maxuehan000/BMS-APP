@@ -17,7 +17,7 @@
 
 ******************************************************************************/
 /*MtBmsControlJudge()开始是并包逻辑，约600行开始，前面是并包启动、运行、停止通讯逻辑*/
-//#define ADDRDEFINE
+#define ADDRDEFINE
 #include "board.h"
 #define SAMEADDR_RESET                  /*打开则检测到有重复地址延迟重新广播*/
 #define MAX_MT_NUM  		2			/*最大并包数量*/
@@ -79,6 +79,9 @@ static u8 Mt_ChgPlugin = 0;		/*有外部的包检测到充电器在*/
 static u8 noMainComMark; /*无主板通讯、无充放电流、无广播信息10s置位*/
 static u16 NoMainTimer;
 static u8 delaycanTestmos;
+#ifdef UART_DEBUG
+static u8 mtDbgOkPrinted; /*并包成功(进入多包模式)打印边沿标记, 回退单包/CAN异常时清零以便下次再报*/
+#endif
 
 /*充电异常*/
 #define COC       1
@@ -205,6 +208,13 @@ void BroadcastMessage(CanRxMessage *RxMsg)
             {
                 BroadcastCount = 0;
                 BroadcastDelay = 0;
+                #ifdef UART_DEBUG
+                UartSendStr("[MT] ADDR CONFLICT same=");
+                UartSendStrData(i, 10);
+                UartSendStr(" addr=");
+                UartSendStrData(MyAddr, 10);
+                UartSendStr("\r\n");
+                #endif
                 #ifndef ADDRDEFINE
                 MyAddr = 0;
                 #endif
@@ -235,7 +245,6 @@ void BroadcastMessage(CanRxMessage *RxMsg)
             #ifndef ADDRDEFINE
             MyAddr = 0;
             #endif
-            NoMainTimer = 0;/*接收到广播需要响应*/
         }
         if(BroadcastDelay>BROADCASTTIME)
             BroadcastDelay = BROADCASTTIME;
@@ -348,7 +357,6 @@ u8 MTCanReceiveProcess(CanRxMessage RxMsg, CanTxMessage *TxMsg)
 { /*数据接收解码*/
     if ((RxMsg.StdId&0x7f0) != MTCANBASEID)
     {
-        NoMainTimer = 0;
         if(MTCANTESTID == RxMsg.StdId) /*测试控制指令*/
         {
             if(RxMsg.Data[0]==0xa5&& RxMsg.Data[1]==0x5a)
@@ -385,7 +393,6 @@ void MTCanCtrl(void)
     static u8 MultiComWaitMark; /*比如过流、短路、充电器重新插入等原因需要等待恢复，通过传递IR=1实现，告诉对方必须等待*/
     CanTxMessage TxMsg;
     u8 i;
-    u8 irisone;   /*接收数据中任意一个ir为1，则改标志置位，一直发送数据且不可发0，等待都为0才倒计时休眠*/
     u8 irnozero;  /*接收数据中任意一个ir不为0，则改标志置位，一直发送数据且可以发0，等待都为0才倒计时休眠*/
 
 
@@ -471,28 +478,35 @@ void MTCanCtrl(void)
             }
             MT_OkMark = 0X5A;
         }
-        irisone = 0;
         irnozero = 0;
         for(i=0;i<MAX_MT_NUM;i++)
         {/*并包数据有更新的有效倒计时*/
             if(MtBmsDataDelay[i]>0)
             {
                 if(MtBmsData[i].iR!=0||DisCurAvg > Dis_Sleep_Cur_V||ChgCurAvg >CHG_SLEEP_CUR)/*对方主动暂停通讯则不启动倒计时*/
+                {
                     MtBmsDataDelay[i]--;
-                if(MtBmsData[i].iR==1)
-                    irisone=0x5a;/*识别到有内阻=1的传递，表明对方要求需要继续通讯*/
+                    if(MtBmsDataDelay[i]==0)
+                    {
+                        #ifdef UART_DEBUG
+                        UartSendStr("[MT] PEER TIMEOUT idx=");
+                        UartSendStrData(i, 10);
+                        UartSendStr(" addr=");
+                        UartSendStrData(MyAddr, 10);
+                        UartSendStr(" OK=");
+                        UartSendStrData(MT_OkMark, 16);
+                        UartSendStr("\r\n");
+                        #endif
+                    }
+                }
                 if(MtBmsData[i].iR>1)
                     OtherBMSIR[i]= MtBmsData[i].iR;
                 if(MtBmsData[i].iR)
                     irnozero = 0x5a;
             }
         }
-        /*总线ir有=1，则需要维持通讯，且不能发0，总线ir>1，也需要维持通讯，但能发0，总线有任意不为0，则需要继续倒计时，预防拔出识别不到*/
-        if(irisone) /*总线上有1，则需要一直通讯，且本地不能发0*/
-				{
-            NoMainTimer = 0;
-				}
-        if(irnozero)/*总线上不为0且不为1，本地需要发0则可以维持发0*/
+        /*总线ir不为0，则需要继续倒计时，预防拔出识别不到*/
+        if(irnozero)/*总线上不为0，本地需要发0则可以维持发0*/
         {
             /*任意一个不为0则需要继续发送等待同步进入休眠*/
             if(noMainComMark>=0x5a)
@@ -517,7 +531,7 @@ void MTCanCtrl(void)
     }
     MtBmsControlJudge();  /*并包逻辑处理*/
 
-    /*判断是否主板不在通讯，且无充放电电流，且未广播延时10s，置位无主板通讯标志*/
+    /*判断是否主板(CAN1)不在通讯，且无充放电电流，延时置位无主板通讯标志*/
     NoMainTimer ++;
     if(DisCurAvg > Dis_Sleep_Cur_V||ChgCurAvg >CHG_SLEEP_CUR
         ||multimaxcur>CHG_SLEEP_CUR/10||multimincur<-Dis_Sleep_Cur_V/10   /*并包的所有包电流*/
@@ -558,7 +572,7 @@ void MTCanCtrl(void)
     if(nomaincomdelay < NOMAINCOM_DELAY)
         nomaincomdelay = NOMAINCOM_DELAY;
     if(NoMainTimer<nomaincomdelay)
-    {/*有主板通讯或有电流，或充电过温，或过流短路，不能休眠倒计时，有按键或充电器插入或广播，清零一次*/
+    {/*有主板(CAN1)通讯或有电流，或充电过温，或过流短路，不能休眠倒计时，有按键或充电器插入，清零一次*/
         ComOverSleepTimer = 0;
         noMainComMark = 0;
     }
@@ -566,7 +580,14 @@ void MTCanCtrl(void)
     {
         NoMainTimer = nomaincomdelay;
         if(noMainComMark<0x5a)
+        {
             noMainComMark = 0x5a;
+            #ifdef UART_DEBUG
+            UartSendStr("[MT] MAIN COMM TIMEOUT noMain=5A addr=");
+            UartSendStrData(MyAddr, 10);
+            UartSendStr("\r\n");
+            #endif
+        }
     }
 }
 void MTCanTxMessageInit(CanTxMessage *TxMsg)
@@ -587,11 +608,19 @@ void CheckCanOffLine(void)
         BatStatus.Bits.CanErr=0;
         delayCheckcanerr = 0;
     }
-		//	if(CAN->ESTS&0X74)			// -->方案不一样，需要改为主板通讯超时判定
-		if(0)
+		if(noMainComMark >= 0x5a)			// 主板通讯超时判定
     {
         if(delayCheckcanerr++>10)
         {
+            #ifdef UART_DEBUG
+            if(BatStatus.Bits.CanErr==0)
+            {
+                UartSendStr("[MT] CAN ERROR CanErr=1 STOP addr=");
+                UartSendStrData(MyAddr, 10);
+                UartSendStr("\r\n");
+                mtDbgOkPrinted = 0;
+            }
+            #endif
             BatStatus.Bits.CanErr=1;
             MT_OkMark = 0;
             for(u8 i=0;i<MAX_MT_NUM;i++)
@@ -603,8 +632,7 @@ void CheckCanOffLine(void)
             Dis_Sleep_Cur_V = DIS_SLEEP_CUR_MIN;
         }
     }
-//	if(delayCheckcanerr&&(CAN->ESTS&0X74)==0) // -->方案不一样，需要改为主板通讯超时判定
-		if(1)
+	if(delayCheckcanerr && (noMainComMark < 0x5a)) // 主板通讯恢复判定
     {
         if(clrcheckcanerr++>10)
             delayCheckcanerr = 0;
@@ -613,11 +641,13 @@ void CheckCanOffLine(void)
     if(BatStatus.Bits.CanErr)
     {
         delayCheckcanerr = 0;
-			//	if(CAN->ESTS&0X74)			// -->方案不一样，需要改为主板通讯超时判定
-					if(0)
+			if(noMainComMark >= 0x5a)			// 主板通讯超时判定
             delayclrcanerr = 0;
         if(delayclrcanerr++> 10)
         {
+            #ifdef UART_DEBUG
+            UartSendStr("[MT] CAN RECOVER CanErr=0\r\n");
+            #endif
             BatStatus.Bits.CanErr = 0;
             noMainComMark = 0;
         }
@@ -920,6 +950,23 @@ void  MtBmsControlJudge(void)
             else
                 multiCondition.bit.qismaxbat=1;
             mtosDelay = MTOSDELAYCDON;
+            #ifdef UART_DEBUG
+            if(mtDbgOkPrinted==0)
+            {
+                UartSendStr("[MT] PACK OK num=");
+                UartSendStrData(multipacknum, 10);
+                UartSendStr(" sbat=");
+                UartSendStrData(multiCondition.bit.singlebat, 10);
+                UartSendStr(" ismin=");
+                UartSendStrData(multiCondition.bit.isminbat, 10);
+                UartSendStr(" ismax=");
+                UartSendStrData(multiCondition.bit.ismaxbat, 10);
+                UartSendStr(" addr=");
+                UartSendStrData(MyAddr, 10);
+                UartSendStr("\r\n");
+                mtDbgOkPrinted=1;
+            }
+            #endif
 
             /*识别出当前是否是高压包，且统计有多少个，用于休眠时判断如何补偿soc及进入休眠的电流条件*/
             maxnum = 0;
@@ -950,6 +997,17 @@ void  MtBmsControlJudge(void)
         }
         else
         {
+            #ifdef UART_DEBUG
+            if(multiCondition.bit.singlebat == 0)
+            {/*并包失败: 对端数据全部超时, 回退单包*/
+                UartSendStr("[MT] FALLBACK SINGLE peer-timeout addr=");
+                UartSendStrData(MyAddr, 10);
+                UartSendStr(" OK=");
+                UartSendStrData(MT_OkMark, 16);
+                UartSendStr("\r\n");
+                mtDbgOkPrinted = 0;
+            }
+            #endif
             multiCondition.bit.singlebat = 1;
             maxmark = 0;
             maxnum = 0;
@@ -1460,6 +1518,7 @@ void CanErrReCheck(void)
 }
 
 #ifdef ADCOMPUTERIR
+static u16 BATIR[CELL_NUM];
 void SyncVIManage(void)
 {
     #if 1
@@ -1478,8 +1537,8 @@ void SyncVIManage(void)
         adcount = 0;
         return;
     }
-////	mcuCurrent[adcount] = ADRead(ADC_CCR_AD)*OPA_CUR_GAIN;
-////	mcuVoltage[adcount] = ADRead(ADC_BAT_VOL)*BAT_VOL_GAIN;
+    mcuCurrent[adcount] = BatData.cur;
+    mcuVoltage[adcount] = (u16)BatData.VolTotal;
     adcount++;
     if(adcount==2)
     {
@@ -1512,18 +1571,18 @@ void SyncVIManage(void)
             {
                 if(ircount>=CELL_NUM)
                     ircount = 0;
-                checkresis = DataFlashPowerDownSave.BATIR[CELL_NUM-1];
+                checkresis = BATIR[CELL_NUM-1];
                 if(ircount!=0)
-                    checkresis = DataFlashPowerDownSave.BATIR[ircount-1];
+                    checkresis = BATIR[ircount-1];
                 if(checkresis>=resistance+IRCHANGE)
                     resistance= checkresis-IRCHANGE;
                 else if(checkresis+IRCHANGE<=resistance)
                     resistance = checkresis+IRCHANGE;
-                DataFlashPowerDownSave.BATIR[ircount] = resistance;
+                BATIR[ircount] = resistance;
                 ircount ++;
                 computeriRAVE = 0;
                 for(i=0;i<CELL_NUM;i++)
-                    computeriRAVE += DataFlashPowerDownSave.BATIR[i];
+                    computeriRAVE += BATIR[i];
                 computeriRAVE /= CELL_NUM;
             }
             mcuCurrent[0] = mcuCurrent[3];
@@ -1541,18 +1600,18 @@ void SyncVIManage(void)
             {
                 if(ircount>=CELL_NUM)
                     ircount = 0;
-                checkresis = DataFlashPowerDownSave.BATIR[CELL_NUM-1];
+                checkresis = BATIR[CELL_NUM-1];
                 if(ircount!=0)
-                    checkresis = DataFlashPowerDownSave.BATIR[ircount-1];
+                    checkresis = BATIR[ircount-1];
                 if(checkresis>=resistance+IRCHANGE)
                     resistance= checkresis-IRCHANGE;
                 else if(checkresis+IRCHANGE<=resistance)
                     resistance = checkresis+IRCHANGE;
-                DataFlashPowerDownSave.BATIR[ircount] = resistance;
+                BATIR[ircount] = resistance;
                 ircount ++;
                 computeriRAVE = 0;
                 for(i=0;i<CELL_NUM;i++)
-                    computeriRAVE += DataFlashPowerDownSave.BATIR[i];
+                    computeriRAVE += BATIR[i];
                 computeriRAVE /= CELL_NUM;
             }
         }
@@ -1583,10 +1642,10 @@ void SyncVIManage(void)
 	}
     if(currLast==0)
     {
-////        currLast = ADRead(ADC_CCR_AD)*OPA_CUR_GAIN;
+        currLast = BatData.cur;
     }
-////	current = ADRead(ADC_CCR_AD)*OPA_CUR_GAIN;
-////	voltage = ADRead(ADC_BAT_VOL)*BAT_VOL_GAIN;
+	current = BatData.cur;
+	voltage = BatData.VolTotal;
 	delta = current - currLast;
 
 	voltIndex += 1;
@@ -1610,11 +1669,11 @@ void SyncVIManage(void)
             {
                 if(ircount>=CELL_NUM)
                     ircount = 0;
-                DataFlashPowerDownSave.BATIR[ircount] = resistance;
+                BATIR[ircount] = resistance;
                 ircount ++;
                 computeriRAVE = 0;
                 for(i=0;i<CELL_NUM;i++)
-                    computeriRAVE += DataFlashPowerDownSave.BATIR[i];
+                    computeriRAVE += BATIR[i];
                 computeriRAVE /= CELL_NUM;
             }
         }
@@ -1644,9 +1703,9 @@ void  BatIRInit(void)
     computeriRAVE = 0;
     for(i=0;i<CELL_NUM;i++)
     {
-        if(DataFlashPowerDownSave.BATIR[i]> INTERNAL_RES_MAX||DataFlashPowerDownSave.BATIR[i]<INTERNAL_RES_MIN)
-            DataFlashPowerDownSave.BATIR[i] = INTERNAL_RES;
-        computeriRAVE += DataFlashPowerDownSave.BATIR[i];
+        if(BATIR[i]> INTERNAL_RES_MAX||BATIR[i]<INTERNAL_RES_MIN)
+            BATIR[i] = INTERNAL_RES;
+        computeriRAVE += BATIR[i];
     }
     computeriRAVE /= CELL_NUM;
 }
@@ -2108,6 +2167,10 @@ u8 ReadIsMinBatFlag(void)
 {
 	return multiCondition.bit.isminbat;
 }
+u8 ReadIsMaxBatFlag(void)
+{
+	return multiCondition.bit.ismaxbat;
+}
 u8 ReadDisOnDelay(void)
 {
 	return delaydison;
@@ -2115,6 +2178,10 @@ u8 ReadDisOnDelay(void)
 u8 ReadDisOffDelay(void)
 {
 	return delaydisoff;
+}
+u8 ReadMyAddr(void)
+{
+	return MyAddr;
 }
 /*增加针对单包且mos开启，休眠后再唤醒，置位一个标志SingleMosOnMark，当canerr置位不影响正常工作，直到id移除或单机标志解除或有电流*/
 /*当前单包且休眠前dmos处于开启,则自主唤醒不识别canerr  SingleMosOnMark缓冲在Batstatusbakcheck[3];*/

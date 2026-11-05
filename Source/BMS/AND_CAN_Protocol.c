@@ -940,6 +940,7 @@ void AndCanReceiveProcess(void)
 	
 	ComOverSleepTimer = 0;
 	BatStatus.Bits.CanAlone = 0;
+	MultiCanHold();   /* 主板(CAN1)有通讯，维持并包通讯，防止超时停发 */
 	
 
 	AndCanInfo.RxFlag = 1;

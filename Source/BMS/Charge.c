@@ -247,7 +247,7 @@ void ChgPlugInCheck(void)
 	{
 		cChgInCnt = 0;
 		vChgInCnt = 0;
-		if (/*(BatStatus.Bits.Dis==1) && */(DisCurAvg>DIS_UNLOAD_CUR)||BatData.VolPack<BatData.VolStack/2 ||((ReadEcuChgPluginState() == 0 /*|| BatStatus.Bits.DetIn_charge == 0*/) && (ChgCurAvg<CHG_SMALL_CUR) ))
+		if (/*(BatStatus.Bits.Dis==1) && */(DisCurAvg>DIS_UNLOAD_CUR)||BatData.VolPack<BatData.VolStack/2 ||((ReadEcuChgPluginState() != 1 /*|| BatStatus.Bits.DetIn_charge == 0*/) && (ChgCurAvg<CHG_SMALL_CUR) ))
 		{
 			if (++cChgOutCnt > CHG_PLUGOUT_DELAY*2)
 			{
@@ -270,6 +270,17 @@ void ChgPlugInCheck(void)
 		else
 		{
 			ccchgoutcnt = 0;
+		}
+
+		/* 检测到充电器拔出(ChgPlugin 1->0)时直接清充电故障,
+		 * 替代失效的 EVENT_CHGOUT(UIEvent 从未被赋值, PowerCtrl 里的清理是死代码) */
+		if (BatStatus.Bits.ChgPlugin == 0)
+		{
+			BatStatus.Bits.ChgOC = 0;
+			BatStatus.Bits.ChgTO = 0;
+			BatStatus.Bits.ChgER = 0;
+			BatStatus.Bits.ChgOV = 0;
+		//	BatStatus.Bits.ChgFC = 0;
 		}
 	}
 	

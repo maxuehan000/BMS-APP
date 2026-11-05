@@ -744,7 +744,7 @@ void UartInit(void)
 {
 //	RCC_EnableAPB1PeriphClk(RCC_APB1_PERIPH_USART3, ENABLE);
 //	UartOpen(USART3, 9600);
-	UartOpen(UART4, 115200);
+	UartOpen(UART4, 9600);
 //	UartRxEnable();
 }
 

@@ -29,7 +29,7 @@ static u8 TimerCan1msFlag,TimerCan10msFlag;
 #define  MT_CAN_PRESCALER          2
 
 /* 调试用：CAN2 持续发送测试帧 (ID=0x0E, 数据 AA BB CC DD EE FF 88 55)，用于验证 CAN2 链路。量产时注释掉。 */
-#define CAN2_TEST_FRAME
+//#define CAN2_TEST_FRAME
 
 /* CAN2 包间通信收发队列 */
 queue MtRxQueue = queue(CanRxMessage, 32);

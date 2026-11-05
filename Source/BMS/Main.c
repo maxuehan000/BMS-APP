@@ -262,7 +262,7 @@ int main(void)
 
     HwIntEnable();                                  // 开中断
 
-#ifdef UART_DEBUG
+#if 0 /* 并包调试: 屏蔽启动时钟打印, 只保留 [MT] 并包打印 */
     UartSendStr((u8 *)"SystemCoreClock = ");
     UartSendStrData((s32)SystemCoreClock, 10);      // 十进制打印
     UartSendStr((u8 *)" Hz (0x");
@@ -343,6 +343,7 @@ int main(void)
 void UartDebug(void)
 {
 	XRAM u8 i;
+	return; /* 并包调试: 屏蔽 XHT 周期打印, 只保留 [MT] 并包打印 */
 
 //	if (Tx_Flag)
 //		return;
@@ -558,6 +559,16 @@ void UartDebug(void)
 	UartSendStrData(ReadMtOkMark(), 16);
 	UartSendStr(" sbat=");
 	UartSendStrData(ReadSingleBatFlag(), 10);
+	UartSendStr(" ismin=");
+	UartSendStrData(ReadIsMinBatFlag(), 10);
+	UartSendStr(" ismax=");
+	UartSendStrData(ReadIsMaxBatFlag(), 10);
+	UartSendStr(" addr=");
+	UartSendStrData(ReadMyAddr(), 10);
+	UartSendStr(" Out=");
+	UartSendStrData(ReadMtOutputState(), 10);
+	UartSendStr(" ChgPlg=");
+	UartSendStrData(ReadMtChgPluginState(), 10);
 	UartSendStr(" P=");
 	UartSendStrData(BatStatus.Bytes.DisProt, 16);
 	UartSendStr(" C=");

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>并包（multiCan）策略测试文档</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: #f5f6f8; color: #1a202c; margin: 0; line-height: 1.65; }
+.container { max-width: 1040px; margin: 0 auto; padding: 32px 28px 72px; }
+h1 { font-size: 26px; border-bottom: 3px solid #2b6cb0; padding-bottom: 10px; }
+h2 { font-size: 20px; border-left: 4px solid #2b6cb0; padding-left: 10px; margin-top: 38px; }
+h3 { font-size: 17px; margin-top: 26px; color: #2b6cb0; }
+h4 { font-size: 15px; margin: 18px 0 6px; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: #fff; }
+th { background: #2b6cb0; color: #fff; text-align: left; }
+td, th { border: 1px solid #d5dae2; padding: 6px 10px; vertical-align: top; }
+tr:nth-child(even) td { background: #f7f9fb; }
+code { background: #eef1f5; padding: 1px 6px; border-radius: 3px; font-family: "SFMono-Regular", Consolas, "Courier New", monospace; font-size: 13px; color: #c7254e; }
+pre { background: #f6f8fa; padding: 12px 14px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; color: #24292e; }
+blockquote { border-left: 4px solid #cbd5e0; color: #4a5568; background: #f7fafc; margin: 12px 0; padding: 8px 14px; border-radius: 0 4px 4px 0; }
+hr { border: none; border-top: 1px solid #e2e8f0; margin: 28px 0; }
+ul, ol { margin: 8px 0; padding-left: 24px; }
+li { margin: 3px 0; }
+.warn { color: #c53030; font-weight: 700; background: #fff5f5; padding: 0 4px; border-radius: 3px; white-space: nowrap; }
+.muted { color: #718096; font-weight: 700; background: #edf2f7; padding: 0 4px; border-radius: 3px; white-space: nowrap; }
+strong { color: #1a202c; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>并包（multiCan）策略测试文档</h1>
+<blockquote>
+<p>项目：xht-nexo-13s2p（PROJ_XHT，13 串）　代码：<code>Source/BMS/multiCan.c</code>、<code>Source/BMS/User.h</code>
+观测：CAN2 抓包（看 0x1A0/0x1A1/0x1A2 帧 ID 与 8 字节数据）
+前提：两块真实板子 CAN2 互联，各自用直流电源模拟电芯总压、电子负载/电阻模拟充放电电流</p>
+</blockquote>
+<h2>1. 策略分组（覆盖目标）</h2>
+<table>
+<thead>
+<tr>
+<th>组</th>
+<th>策略</th>
+<th>代码位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>地址仲裁（广播/排名/冲突/溢出）</td>
+<td><code>MtCanBroadcastAddInit</code>、<code>BroadcastMessage</code>、<code>MyMtCanAddrSet</code>、<code>MTCanCtrl</code></td>
+</tr>
+<tr>
+<td>B</td>
+<td>单/双包识别（IR 补偿、300/800mV 阈值、超时）</td>
+<td><code>MtBmsControlJudge</code> 789~955</td>
+</tr>
+<tr>
+<td>C</td>
+<td>MOS 控制 10 条规则</td>
+<td><code>MtBmsControlJudge</code> 985~1252</td>
+</tr>
+<tr>
+<td>D</td>
+<td>快速切换（比较器 QUICK 开关 MOS）</td>
+<td><code>HandleCompCur</code>、<code>CompIntCallBack</code></td>
+</tr>
+<tr>
+<td>E</td>
+<td>通讯管理（CanErr、休眠、iR 传递、重连）</td>
+<td><code>MTCanCtrl</code>、<code>CheckCanOffLine</code>、<code>CanErrReCheck</code></td>
+</tr>
+<tr>
+<td>F</td>
+<td>对外信号（Mt_Output/Mt_ChgPlugin）</td>
+<td><code>MtBmsControlJudge</code> 1386~1405</td>
+</tr>
+</tbody>
+</table>
+<h2>2. 关键常量（设定电压/电流用）</h2>
+<table>
+<thead>
+<tr>
+<th>常量</th>
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MAX_MT_NUM</td>
+<td>2</td>
+<td>最大并包 2 个</td>
+</tr>
+<tr>
+<td>MTCANBASEID / MTCANTESTID</td>
+<td>0x1A0 / 0x2A0</td>
+<td>报文基 ID / 测试帧</td>
+</tr>
+<tr>
+<td>MTSENDTIME</td>
+<td>5 拍(50ms)</td>
+<td>数据帧周期</td>
+</tr>
+<tr>
+<td>MTBMSDATADELAY</td>
+<td>100 拍(1s)</td>
+<td>对端数据有效时长</td>
+</tr>
+<tr>
+<td>VOLOFFER / QVOLOFFER</td>
+<td>30(300mV) / 80(800mV)</td>
+<td>进入/退出并包压差</td>
+</tr>
+<tr>
+<td>DISONDELAY</td>
+<td>20 拍(200ms)</td>
+<td>最低/单包开 DMOS 延时</td>
+</tr>
+<tr>
+<td>DISONDELAY1</td>
+<td>50 拍(500ms)</td>
+<td>有更低包开 DMOS 延时</td>
+</tr>
+<tr>
+<td>CHGONDELAY</td>
+<td>50 拍(500ms)</td>
+<td>最高/单包开 CMOS 延时</td>
+</tr>
+<tr>
+<td>CHGONDELAY1</td>
+<td>150 拍(1.5s)</td>
+<td>有更高包开 CMOS 延时</td>
+</tr>
+<tr>
+<td>MTOSDELAYCDON</td>
+<td>200 拍(2s)</td>
+<td>双转单加长延时</td>
+</tr>
+<tr>
+<td>DISOFFDELAY / CHGOFFDELAY</td>
+<td>150 拍(1.5s)</td>
+<td>关 DMOS / CMOS 延时</td>
+</tr>
+<tr>
+<td>DIS_UNDER_VOL_TOTAL</td>
+<td>33.8V</td>
+<td>单包过放总压(2600×13)</td>
+</tr>
+<tr>
+<td>CHG_SMALL_CUR / CHG_OUT_CUR / CHG_SLEEP_CUR</td>
+<td>500 / 250 / 166mA</td>
+<td>充电电流判定</td>
+</tr>
+<tr>
+<td>DIS_SLEEP_CUR_MIN / MAX</td>
+<td>166 / 333mA</td>
+<td>放电休眠电流</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>时间换算：<code>MtBmsControlJudge</code> 每 10ms 调用一次，<code>delay 值 × 10ms = 实际时间</code>。</p>
+</blockquote>
+<h2>3. CAN2 报文格式（判定依据）</h2>
+<p><strong>广播帧</strong>（ID=0x1A0，8 字节）：首次/同步帧 <code>Data=FF×8</code>（<code>0xFFFFFFFF_FFFFFFFF</code>，触发全部重播）；正常广播 <code>Data[0..3]=CRC_H</code>、<code>Data[4..7]=CRC_L</code>。</p>
+<p><strong>数据帧</strong>（ID=0x1A0+地址 = 0x1A1/0x1A2，8 字节）：</p>
+<table>
+<thead>
+<tr>
+<th>字节</th>
+<th>内容</th>
+<th>单位/说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data[0]</td>
+<td>状态 byte0</td>
+<td>bit2=<strong>chgmos</strong>(充电MOS)，bit0=chgplugin</td>
+</tr>
+<tr>
+<td>Data[1]</td>
+<td>状态 byte1</td>
+<td>bit2=<strong>dismos</strong>(放电MOS)</td>
+</tr>
+<tr>
+<td>Data[2]</td>
+<td>状态 byte2</td>
+<td>bit0=id</td>
+</tr>
+<tr>
+<td>Data[3..4]</td>
+<td>packvol(u16 小端)</td>
+<td>电芯总压 10mV</td>
+</tr>
+<tr>
+<td>Data[5..6]</td>
+<td>cur(s16 小端)</td>
+<td>电流 10mA，正=充电</td>
+</tr>
+<tr>
+<td>Data[7]</td>
+<td>iR</td>
+<td>=10(内阻)；=1 表示要求继续通讯</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>判定 MOS 开关只看 Data[0].bit2 与 Data[1].bit2 的 0/1。</p>
+</blockquote>
+<h2>4. 测试用例</h2>
+<h3>A 组：地址仲裁</h3>
+<p><strong>TC-A1 单板上电广播→地址分配</strong>
+- 前置：仅板A 上电，总压 50V，无电流。
+- 步骤：上电抓 CAN2。
+- 期待：① 先发 <code>0x1A0</code>，首帧 <code>Data=FF×8</code>（同步）；② 随后发多帧 <code>0x1A0</code>（Data=自身 CRC）；③ 约 300ms 后停止广播，改为每 50ms 发 <code>0x1A1</code>，且 Data[3..4]≈5000、Data[5..6]≈0。
+- 判定：连续看到 <code>0x1A1</code>。</p>
+<p><strong>TC-A2 双板按 CRC 排名分配地址</strong>
+- 前置：板A、板B 同时上电，各 50V，无电流。
+- 步骤：同时上电抓 CAN2。
+- 期待：广播后两板分别稳定发 <code>0x1A1</code> 与 <code>0x1A2</code>（互不相同，CRC 大者地址小）。
+- 判定：总线同时存在 <code>0x1A1</code>、<code>0x1A2</code>，无冲突。</p>
+<p><strong>TC-A3 后接入板触发重新广播</strong>
+- 前置：板A 已稳定发 <code>0x1A1</code>；板B 断电后上电。
+- 步骤：板B 上电抓 CAN2。
+- 期待：板B 先发 <code>0x1A0</code>（含一帧 <code>FF×8</code>），板A 收到后也重进广播，最终恢复 <code>0x1A1</code>/<code>0x1A2</code>。
+- 判定：一段时间内两板都发 <code>0x1A0</code>，随后恢复两数据帧。</p>
+<p><strong>TC-A4 重复地址检测重广播（SAMEADDR_RESET）</strong>
+- 前置：双板正常；用 CAN 工具注入与板A 同地址的假帧 <code>0x1A1</code>。
+- 步骤：连续注入 10 次（约 500ms）。
+- 期待：板A 清 <code>MyAddr=0</code> 重新广播（发 <code>0x1A0</code>），重排名。
+- 判定：板A 原 <code>0x1A1</code> 消失，出现广播帧后重新分配。
+- 说明：需 CAN 工具注入，条件受限但可测。</p>
+<p><strong>TC-A5 地址溢出重启广播</strong> — <strong><span class="warn">【无法真测】</span></strong>
+- 原因：<code>MAX_MT_NUM=2</code>，正常双包地址只会 1/2；触发 <code>MyAddr&gt;MAX_MT_NUM</code> 需第 3 包或注入高地址帧，仅能 CAN 工具模拟。</p>
+<h3>B 组：单/双包识别</h3>
+<blockquote>
+<p>有效对端=收到其数据帧（<code>MtBmsDataDelay[i]!=0</code>）；高低压按 IR 补偿电压 <code>packvol - cur*iR/500</code>（10mV 单位，iR 恒 10）。</p>
+</blockquote>
+<p><strong>TC-B1 单包模式</strong>
+- 前置：仅板A，无对端。
+- 期待：<code>singlebat=1</code>，MOS 按单包规则（规则2/4）动作。
+- 判定：无对端帧，板A 维持 <code>0x1A1</code>，MOS 位随单包规则变化。</p>
+<p><strong>TC-B2 双包模式</strong>
+- 前置：双板地址分配完成。
+- 期待：互收对方数据帧，<code>singlebat=0</code>，进入并包判断。
+- 判定：两板数据帧 Data[7]=10（iR 正常），无互超时。</p>
+<p><strong>TC-B3 进入并包 300mV 阈值</strong>
+- 前置：板A 52.5V，板B 52.0V（差 500mV&gt;300mV），无电流。
+- 期待：板B <code>isminbat=1</code>、板A <code>ismaxbat=1</code>；板A 有 <code>otherisminbat</code>、板B 有 <code>otherismaxbat</code>。
+- 判定：进入规则1/3，CAN 报文 MOS 位按高/低压包切换。</p>
+<p><strong>TC-B4 退出并包 800mV 阈值</strong>
+- 前置：双包压差拉大到 &gt;800mV（如 53.0V / 52.0V，差 1.0V）。
+- 期待：<code>qisminbat/qismaxbat</code> 翻转（退出用阈值 <code>QVOLOFFER=80</code>），MOS 控制切换。
+- 判定：见 <code>MtBmsControlJudge</code> 855~871 行。</p>
+<p><strong>TC-B5 对端超时回退单包</strong>
+- 前置：双包正常后断开板B CAN2（或断电）。
+- 期待：板A 的 <code>MtBmsDataDelay</code> 从 100 递减到 0（约 1s）→ <code>singlebat=1</code> 回单包。
+- 判定：板A 报文仍在，但 MOS 规则切回单包。</p>
+<h3>C 组：MOS 控制 10 条规则</h3>
+<blockquote>
+<p>约定：板A=高压包、板B=低压包；"本包"为被测板。MOS 位：Data[0].bit2=chgmos、Data[1].bit2=dismos。</p>
+</blockquote>
+<p><strong>TC-C1 规则1：有更低包时开本包 DMOS</strong>
+- 前置：板A 53.0V（高）、板B 52.5V（低，差 500mV），低压包 ChgAble=0（不允许充电）且 cmos 关；无电流。
+- 期待：板A 的 DMOS 延时 500ms 后开（Data[1].bit2=0→1）。
+- 分支：若低压包 cmos 已开、且板A 出现 &gt;1A 充电电流，同样开 DMOS。</p>
+<p><strong>TC-C2 规则2：最低/单包开 DMOS</strong>
+- 前置：板B 52.5V 为最低包（或单板），无电流。
+- 期待：板B DMOS 延时 200ms 后开（Data[1].bit2=1）。
+- 分支：单包且端口电压 &gt; 33.8V(过放总压) 且无充电电流 → <strong>不开</strong> DMOS。</p>
+<p><strong>TC-C3 规则3：有更高包时开本包 CMOS</strong>
+- 前置：板B 52.5V（低）、板A 53.0V（高），高压包 Dmos 关且(不允许放电 或 系统有充电电流)；无电流。
+- 期待：板B CMOS 延时 1.5s 后开（Data[0].bit2=0→1）。
+- 分支：高压包 Dmos 已开、且板B 有 &gt;1A 放电电流 → 开 CMOS；高压包 Dmos 关且总线充电 &gt;1A → 快速开 CMOS。</p>
+<p><strong>TC-C4 规则4：最高/单包开 CMOS</strong>
+- 前置：板A 53.0V 为最高包，ChgAble=1；无电流。
+- 期待：板A CMOS 延时 500ms 后开（Data[0].bit2=1）。
+- 分支：本包放电 &gt;1A → <strong>立即</strong>开 CMOS（<code>BatOpaCurGet()&lt;-1000</code>）。</p>
+<p><strong>TC-C5 规则5：关 DMOS</strong>
+- 前置：板A 非最低包，出现充电电流或最高包有充电器，且总线有低压包能充电、总线无放电、最低包 cmos 关；或本包 DsgAble=0（放电异常）。
+- 期待：板A DMOS 延时 1.5s 后关（Data[1].bit2=1→0），并置 <code>dmosofftoondelay</code> 加长再开延时。</p>
+<p><strong>TC-C6 规则6：关 CMOS（5 分支）</strong>
+- 前置（任一分支）：①非最高包+高压包能放电+Dmos 关+无充电电流；②ChgAble=0 且非单包；③本包充电 &gt;5A 且总线放电 &gt;5A；④最低包有充电电流但总线无充电；⑤高压包放电中且本包允许充电。
+- 期待：板A CMOS 延时 1.5s 后关（Data[0].bit2=1→0）。
+- 建议：先测①③（最常见），②④⑤为边界。</p>
+<p><strong>TC-C7 规则7：放电异常关 DMOS 并加长再开延时</strong>
+- 前置：制造板A 放电异常（diserr 置位，如放电过流/短路）。
+- 期待：<code>DsgAble=0</code>→规则5 关 DMOS；再开需多 2s（<code>dmosofftoondelay=MTOSDELAYCDON</code>）。
+- 说明：真实过流/短路有风险，<strong><span class="warn">【条件受限】</span></strong>建议用代码/调试注入 diserr 位验证。</p>
+<p><strong>TC-C8 规则8：充电异常关 CMOS</strong>
+- 前置：制造板A 充电异常（chgerr，如过充/充电过温），非单包。
+- 期待：<code>ChgAble=0</code>→规则6 分支②关 CMOS。</p>
+<p><strong>TC-C9 规则9：充电器移除关 CMOS</strong> — <strong><span class="muted">【已停用】</span></strong>
+- 说明：代码 <code>cmosofftoondelay</code> 相关逻辑已整体注释（<code>// ---&gt; No Use</code>，见 1074/1153/1262 行），当前不生效，无需测试。</p>
+<p><strong>TC-C10 规则10：充电过温周期允许 CMOS</strong>
+- 前置：板A 为最高包，制造充电过温（ChgMOT/ChgOT，chgerr=15），无充电器，无充电电流。
+- 期待：<code>ChgAble=0</code> 下周期允许——无放电电流约 1.5s 周期、有放电电流约 7s 周期置 <code>ChgAble=1</code> 探测并包点。
+- 说明：需真实温升，<strong><span class="warn">【条件受限】</span></strong>建议代码注入 ChgOT/ChgMOT 位验证。</p>
+<h3>D 组：快速切换（比较器 QUICK 开关 MOS）</h3>
+<blockquote>
+<p><code>HandleCompCur</code>：并包放电时低压包只开 DMOS 未开 CMOS，识别大电流放电/充电突变，用比较器快开对向 MOS，防对充。</p>
+</blockquote>
+<p><strong>TC-D1 放电下低压包快开 CMOS（Compdiscase）</strong>
+- 前置：双包，板B(低)处于放电、只开 DMOS、CMOS 关；总线放电 &gt;1A。
+- 期待：识别 250ms 后进入快开准备，放电电流瞬间反向（转充电）时 QUICKChgMos=1 快开 CMOS；慢开启动或 5s 后自动清快开。
+- 判定：板B Data[0].bit2 在大电流反向时快速置 1。
+- 说明：<strong><span class="warn">【条件受限】</span></strong>需 &gt;1A 快速反向电流，电子负载难做快速反向，建议 CAN 工具注入对端电流或用代码/比较器注入。</p>
+<p><strong>TC-D2 充电下高压包快开 DMOS（Compchgcase）</strong>
+- 前置：双包，板A(高)处于充电、只开 CMOS、DMOS 关；总线充电 &gt;1A。
+- 期待：充电电流瞬间反向（转放电）时 QUICKDisMos=1 快开 DMOS；5s 后清快开。
+- 判定：板A Data[1].bit2 快速置 1。
+- 说明：<strong><span class="warn">【条件受限】</span></strong>同 TC-D1，需快速反向电流。</p>
+<p><strong>TC-D3 快开 5s 超时退出</strong>
+- 前置：触发 QUICKChgMos/QUICKDisMos 后不满足慢开条件。
+- 期待：500 拍(5s) 后 <code>QUICK</code> 位清 0、快开退出。
+- 判定：快开后 5s 无慢开则 MOS 回退。</p>
+<h3>E 组：通讯管理</h3>
+<p><strong>TC-E1 主板通讯超时停止并包（noMainComMark→CanErr）</strong>
+- 前置：双包运行，无主板(ECU)通讯、无充放电流、无广播。
+- 期待：<code>NoMainTimer</code> 累加到 24s（NOMAINCOM_DELAY）→ <code>noMainComMark=0x5a</code>→再过约 100ms <code>CanErr=1</code>，清 <code>MtBmsDataDelay</code>，本包停止并包判断。
+- 判定：约 24s 后板A 停止发数据帧（或 Data[7]=0），单包动作。</p>
+<p><strong>TC-E2 有电流维持通讯（大电流→120s）</strong>
+- 前置：双包，出现 &gt;1A 充/放电流持续 10s。
+- 期待：退出并包延迟由 24s 提升到 120s（NOMAINCOM_LOADDELAY），电流不停则维持通讯。
+- 判定：&gt;1A 持续 10s 后，即使断主板通讯也继续发帧至 120s。</p>
+<p><strong>TC-E3 iR 字段传递（继续通讯标志）</strong>
+- 前置：某包置 <code>MultiComWaitMark</code>（过流/短路等待恢复），其发送帧 Data[7]=1。
+- 期待：对端收到 iR=1 后 <code>NoMainTimer</code> 持续清零、维持通讯不发 0；iR&gt;1 时按真实内阻处理。
+- 判定：抓包可见一包 Data[7]=1 期间，另一包持续发帧不进入休眠。
+- 说明：<strong><span class="warn">【条件受限】</span></strong>需触发过流/短路等待，建议代码注入。</p>
+<p><strong>TC-E4 充电器插入重播 0.5s</strong>
+- 前置：板A 检测到充电器插入（ChgPlugin 0→1）。
+- 期待：约 500ms（50 拍）内 Data[7]=1 通知其他包继续通讯。
+- 判定：充电器插入瞬间板A 发 Data[7]=1 的帧。</p>
+<p><strong>TC-E5 上电通讯不上强开放电 MOS（端口无电压探测）</strong>
+- 前置：上电 2s 内 CAN 通讯不上（CanErr=1）、端口电压 &lt; 33.8V。
+- 期待：尝试开放电 MOS 建立通讯（延时 40~60 拍后 <code>DisMosAllow=1</code>，持续约 1s）。
+- 判定：上电无对端时板A 短暂 Data[1].bit2=1。</p>
+<p><strong>TC-E6 CanErr 自动恢复重连</strong>
+- 前置：CanErr=1 且端口电压很低、放电异常/故障恢复。
+- 期待：清 <code>MyAddr=0</code>、<code>BroadcastMark=0</code> 重新广播尝试连接。
+- 判定：故障恢复后板A 重新发 <code>0x1A0</code> 广播。</p>
+<h3>F 组：对外信号传递</h3>
+<p><strong>TC-F1 Mt_Output（外部包放电 MOS 开）</strong>
+- 前置：双包，板A(高) 自身未开 DMOS，但对端板B 已开 DMOS，且板A 端口电压 &gt; 33.8V。
+- 期待：板A 置 <code>Mt_Output=1</code>（外部在放电，端口有输出）。
+- 判定：见 <code>MtBmsControlJudge</code> 1386~1396 行（内部信号，如需观测走 UART 或间接看端口行为）。</p>
+<p><strong>TC-F2 Mt_ChgPlugin（外部包充电器在）</strong>
+- 前置：双包，对端板B 检测到充电器（chgplugin=1），板A 未检测到。
+- 期待：板A 置 <code>Mt_ChgPlugin=1</code>。
+- 判定：见 1398~1405 行（内部信号）。</p>
+<hr />
+<h2>5. 无法测试用例汇总</h2>
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>原因</th>
+<th>替代方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TC-A5 地址溢出</td>
+<td>需第 3 包，MAX_MT_NUM=2</td>
+<td>CAN 工具注入高地址帧</td>
+</tr>
+<tr>
+<td>TC-C7 放电异常</td>
+<td>需真实过流/短路，危险</td>
+<td>代码注入 diserr 位</td>
+</tr>
+<tr>
+<td>TC-C10 充电过温</td>
+<td>需真实温升</td>
+<td>代码注入 ChgOT/ChgMOT 位</td>
+</tr>
+<tr>
+<td>TC-C9 充电器移除</td>
+<td>代码已停用(No Use)</td>
+<td>不测</td>
+</tr>
+<tr>
+<td>TC-D1/D2 快速切换</td>
+<td>需 &gt;1A 快速反向电流</td>
+<td>CAN 工具注入电流 / 比较器注入</td>
+</tr>
+<tr>
+<td>TC-E3 过流等待 iR=1</td>
+<td>需过流/短路等待</td>
+<td>代码注入 MultiComWaitMark</td>
+</tr>
+<tr>
+<td>TC-E5 上电强开 DMOS</td>
+<td>需上电瞬间通讯不上+低压</td>
+<td>可测但时序窗口窄，需反复</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>其余用例（A1~A4、B 全组、C1~C6/C8、E1/E2/E4/E6、F 组）在直流电源+电子负载+双板 CAN2 互联条件下<strong>可直接测</strong>，判定统一看 CAN2 报文 ID 与 Data[0].bit2 / Data[1].bit2。</p>
+</blockquote>
+</div>
+</body>
+</html>

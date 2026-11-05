@@ -264,6 +264,7 @@ u8 gLedTrigger = LED_OFF;   /* 当前 LED 触发状态 (供串口调试) */
 void RGBPwmUp(void)
 {
     static u16 tick = 0;
+    static u8  lastChgPlugin = 0;   /* 上次充电器插入标志, 用于检测拔出边沿 */
 
     tick++;
 
@@ -284,6 +285,15 @@ void RGBPwmUp(void)
         AllLedOff();
         return;
     }
+
+    /* 检测到充电器拔出(ChgPlugin 1->0): 立即退出充电显示策略,
+     * 复位闪烁/呼吸相位, 避免黄色流水灯相位延续;
+     * 后续 if-else 链因 ChgPlugin==0 自然走电量/全灭等非充电策略 */
+    if (lastChgPlugin && !BatStatus.Bits.ChgPlugin)
+    {
+        tick = 0;
+    }
+    lastChgPlugin = BatStatus.Bits.ChgPlugin;
 
     /* 1. 过充/过放/短路/过流保护 -> 红色快闪 2Hz */
     if (BatStatus.Bits.ChgOV  || BatStatus.Bits.ChgOV2 ||
