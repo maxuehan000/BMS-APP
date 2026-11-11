@@ -247,7 +247,8 @@ void ChgPlugInCheck(void)
 	{
 		cChgInCnt = 0;
 		vChgInCnt = 0;
-		if (/*(BatStatus.Bits.Dis==1) && */(DisCurAvg>DIS_UNLOAD_CUR)||BatData.VolPack<BatData.VolStack/2 ||((ReadEcuChgPluginState() != 1 /*|| BatStatus.Bits.DetIn_charge == 0*/) && (ChgCurAvg<CHG_SMALL_CUR) ))
+		//if (/*(BatStatus.Bits.Dis==1) && */(DisCurAvg>DIS_UNLOAD_CUR)||BatData.VolPack<BatData.VolStack/2 ||((ReadEcuChgPluginState() != 1 /*|| BatStatus.Bits.DetIn_charge == 0*/) && (ChgCurAvg<CHG_SMALL_CUR) ))
+		if (/*(BatStatus.Bits.Dis==1) && */(DisCurAvg>DIS_UNLOAD_CUR)||BatData.VolPack<BatData.VolStack/2  )
 		{
 			if (++cChgOutCnt > CHG_PLUGOUT_DELAY*2)
 			{
@@ -811,16 +812,18 @@ void ChgMosAbleUpdate(void)
 *****************************************************************************/
 u8 ChgStopFlag(void)
 {
-	if(!BatStatus.Bits.ChgPlugin)    // 无充电器接入，禁止充电（充电侧用充电器在位判断，不用 DetIn）
+	if(!BatStatus.Bits.ChgPlugin)    // 本包无充电器：单包 或 并包中无任何包有充电器时禁止充电；并包且对端有充电器时放行(参与双充)
 	{
-		return 1;
+		if(ReadSingleBatFlag() || !ReadOtherChgPluginState())
+		{
+			return 1;
+		}
 	}
 
     if(BatStatus.Bytes.ChgProt || BatStatus.Bytes.HardFault)
     {
         return 1;
     }
-
 #if 1
     if(BatStatus.Bits.DisSC || BatStatus.Bits.DisOCL || BatStatus.Bits.DisOC)
     {

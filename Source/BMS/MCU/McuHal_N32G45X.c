@@ -1128,45 +1128,18 @@ void HwMcuReset(void)
 *****************************************************************************/
 void HwCompOpamInit(void)
 {
-#if 0
-    COMP_InitType COMP_Initial;    /*Initial comp*/
-    COMP_StructInit(&COMP_Initial);
+    OPAMP_InitType OPAMP_Initial;
 
-    RCC_EnableAPB1PeriphClk(RCC_APB1_PERIPH_COMP, ENABLE);
-    COMP_SetRefScl(3, 1,  3, 1);			// enable Vref(6bit:64)
-
-    COMP_Initial.InpSel     = COMP2_CTRL_INPSEL_PA11;  			// brush BC+
-    COMP_Initial.InmSel     = COMP2_CTRL_INMSEL_VREF_VC2;
-    COMP_Initial.SampWindow = 10;
-    COMP_Initial.Thresh     = 6;
-    COMP_Init(COMP2, &COMP_Initial);
-    COMP_Initial.InpSel     = COMP1_CTRL_INPSEL_PB3;  			// brush BC+
-    COMP_Initial.InmSel     = COMP1_CTRL_INMSEL_VREF_VC1;
-    COMP_Initial.SampWindow = 10;
-    COMP_Initial.Thresh     = 6;
-    COMP_Init(COMP1, &COMP_Initial);
-    COMP_SetIntEn(3);		// IT enable comp1/2
-    COMP_Enable(COMP1, ENABLE);
-    COMP_Enable(COMP2, ENABLE);
-
-    /////////////////////////////////////////////////////////////////
-	OPAMP_InitType OPAMP_Initial;
     OPAMP_StructInit(&OPAMP_Initial);
-
     RCC_EnableAPB1PeriphClk(RCC_APB1_PERIPH_OPAMP, ENABLE);
 
-    OPAMP_Initial.Mod   = OPAMP_CS_EXT_OPAMP;
-//    OPAMP_Initial.Gain  = OPAMP_CS_PGA_GAIN_16;
-//    OPAMP_Init(OPAMP1, &OPAMP_Initial);
-    OPAMP_Init(OPAMP2, &OPAMP_Initial);
+    OPAMP_Initial.Mod = OPAMP_CS_EXT_OPAMP;              // 独立运放，外部电阻差分放大
+    OPAMP_Init(OPAMP1, &OPAMP_Initial);
 
-    OPAMP_SetVpSel(OPAMP2, OPAMP2_CS_VPSEL_PA7);
-    OPAMP_SetVmSel(OPAMP2, OPAMP2_CS_VMSEL_PC5);
-	OPAMP_SetVpSecondSel(OPAMP2, OPAMP2_CS_VPSSEL_NC);
-	OPAMP_SetVmSecondSel(OPAMP2, OPAMP2_CS_VMSSEL_FLOAT);
+    OPAMP_SetVpSel(OPAMP1, OPAMP1_CS_VPSEL_PA7);         // 正输入 PA7 = C_VINP
+    OPAMP_SetVmSel(OPAMP1, OPAMP1_CS_VMSEL_PA3);         // 负输入 PA3 = C_VINM
 
-    OPAMP_Enable(OPAMP2, ENABLE);
-#endif
+    OPAMP_Enable(OPAMP1, ENABLE);                        // 输出 PA6 -> ADC1 Ch3 (CH_OPAM_CUR)
 }
 
 /*****************************************************************************
@@ -1708,7 +1681,7 @@ void HwSleepExit(void)
 	McuClkLpConfig(ENABLE);
 
 	ADCInit();
-//	HwCompOpamInit();
+	HwCompOpamInit();
 //	SpiInit(GD25_SPI);
 
 	SysTick_Set(SystemCoreClock/1000, ENABLE);
@@ -1733,7 +1706,7 @@ void HwMcuInit(void)
 //	SpiInit(GD25_SPI);
 	I2CInit();
 	UartInit();
-//	HwCompOpamInit();
+	HwCompOpamInit();
 #ifdef USE_MCU_RTC
 	HwRtcInit();
 #endif

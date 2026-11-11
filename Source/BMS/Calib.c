@@ -1,5 +1,6 @@
 #include "Calib.h" 
 #include "DataFlash.h"
+#include "AdcM.h"
 
 #if 0
 /*****************************************************************************
@@ -164,7 +165,7 @@ void CalibCurBias(void)
 
 	for(i=0; i<8; i++)							// 读取放电零漂电流值
 	{
-////		TempCur = ADRead(ADC_CCR_AD);
+		TempCur = AdcData.ADVal[CH_OPAM_CUR];
 		if((TempCur>CHG_CUR_ZERO_MAX) || (TempCur<CHG_CUR_ZERO_MIN))
 		{
 			TempCur = CHG_CUR_ZERO_DEFAULT;

@@ -262,20 +262,6 @@ int main(void)
 
     HwIntEnable();                                  // 开中断
 
-#if 0 /* 并包调试: 屏蔽启动时钟打印, 只保留 [MT] 并包打印 */
-    UartSendStr((u8 *)"SystemCoreClock = ");
-    UartSendStrData((s32)SystemCoreClock, 10);      // 十进制打印
-    UartSendStr((u8 *)" Hz (0x");
-    UartSendStrData((s32)SystemCoreClock, 16);      // 十六进制打印(自带0x前缀)
-    UartSendStr((u8 *)")\r\n");
-#endif
-
-   /* while(1)
-	{
-		TaskTickUpdate();
-		AndCanCtrl();
-
-	}*/
 	while(1)
     {
     	TaskTickUpdate();
@@ -342,8 +328,8 @@ int main(void)
 #define UART_SEND_PERIOD        (600/TIMEBASE_LOOP)
 void UartDebug(void)
 {
+#if 0 /* 并包调试: 屏蔽 XHT 周期打印, 只保留 [MT] 并包打印 */
 	XRAM u8 i;
-	return; /* 并包调试: 屏蔽 XHT 周期打印, 只保留 [MT] 并包打印 */
 
 //	if (Tx_Flag)
 //		return;
@@ -593,5 +579,6 @@ void UartDebug(void)
 
 	UartSendStr("\r\n");
 //	UartBmsRxEnable();
+#endif
 }
 #endif

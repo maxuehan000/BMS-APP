@@ -68,6 +68,12 @@ extern queue MtTxQueue;
 extern void MtHwCanInit(void);
 extern void MtCanReceiveProcess(void);
 extern void MtCanTransmitProcess(void);
+
+/* 调试用：CAN2 发送 SOC/容量/电压/温度/电流 测试帧 (ID=0x2F0+MyAddr 起连续2帧)。量产时注释掉。 */
+#define CAN2_DBG_DATA_FRAME
+#ifdef CAN2_DBG_DATA_FRAME
+extern void DbgDataFrameSend(void);
+#endif
 #endif
 
 

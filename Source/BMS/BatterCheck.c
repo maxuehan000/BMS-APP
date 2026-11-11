@@ -391,7 +391,7 @@ void BatOpaCurUpdate(void)
         filtercount = 0;
     }
 	
-////    AdData = ADRead(ADC_CCR_AD);
+    AdData = AdcData.ADVal[CH_OPAM_CUR];
     CurFilter[filtercount] = AdData;
     if(++filtercount >= FILTERNUM)/*需重点关注，很容易溢出*/
     {

@@ -19,6 +19,7 @@
 
 
 #include "board.h"
+#include "AdcM.h"
 
 static u8 TimerCan1msFlag,TimerCan10msFlag;
 
@@ -195,6 +196,66 @@ void Can2TestFrameSend(void)
 }
 #endif
 
+#ifdef CAN2_DBG_DATA_FRAME
+/* 调试用：CAN2 发送 SOC/容量/电压/温度/电流 测试帧 (2帧), 供上位机抓包分析 */
+void DbgDataFrameSend(void)
+{
+    CanTxMessage TxMsg;
+    u8 addr = MultiCanAddr();
+    s16 cur = (s16)BatData.cur;
+
+    /* 帧1: ID=0x2F0+addr, SOC/容量 */
+    TxMsg.ExtId = 0;
+    TxMsg.StdId = 0x2F0u + addr;
+    TxMsg.IDE   = CAN_ID_STD;
+    TxMsg.RTR   = CAN_RTRQ_DATA;
+    TxMsg.DLC   = 8;
+    TxMsg.Data[0] = SocInfo.SocS;
+    TxMsg.Data[1] = SocInfo.Soc;
+    TxMsg.Data[2] = (u8)SocInfo.Rmc;
+    TxMsg.Data[3] = (u8)(SocInfo.Rmc >> 8);
+    TxMsg.Data[4] = (u8)SocInfo.RmcDisp;
+    TxMsg.Data[5] = (u8)(SocInfo.RmcDisp >> 8);
+    TxMsg.Data[6] = (u8)SocInfo.Fcc;
+    TxMsg.Data[7] = (u8)(SocInfo.Fcc >> 8);
+    CAN_TransmitMessage(CAN2, &TxMsg);
+
+    /* 帧2: ID=0x3F0+addr, 电压/温度/电流 */
+    TxMsg.StdId = 0x3F0u + addr;
+    TxMsg.Data[0] = (u8)BatData.VolMax;
+    TxMsg.Data[1] = (u8)(BatData.VolMax >> 8);
+    TxMsg.Data[2] = (u8)BatData.VolMin;
+    TxMsg.Data[3] = (u8)(BatData.VolMin >> 8);
+    TxMsg.Data[4] = (u8)BatNtcTempMin;
+    TxMsg.Data[5] = (u8)(BatNtcTempMin >> 8);
+    TxMsg.Data[6] = (u8)cur;
+    TxMsg.Data[7] = (u8)(cur >> 8);
+    CAN_TransmitMessage(CAN2, &TxMsg);
+
+    /* Frame 3: ID=0x4F0+addr, MCU OPAMP current raw AD / zero / converted value (for current calibration).
+       Sent every 100ms (10ms*10) to reduce CAN2 mailbox occupation, so 0x1A0 broadcast can still get a free mailbox. */
+    {
+        static u8 opaDbgCnt = 0;
+        if ((++opaDbgCnt) >= 10)
+        {
+            opaDbgCnt = 0;
+            u16 opa_ad  = AdcData.ADVal[CH_OPAM_CUR];     /* OPAMP current raw AD, 0~4095 */
+            s16 opa_cur = (s16)(BatOpaCurGet() / 10);     /* OPAMP converted current, 10mA/LSB */
+            TxMsg.StdId = 0x4F0u + addr;
+            TxMsg.Data[0] = addr;
+            TxMsg.Data[1] = (u8)(opa_ad & 0xFF);
+            TxMsg.Data[2] = (u8)(opa_ad >> 8);
+            TxMsg.Data[3] = (u8)(ChgCurZero & 0xFF);
+            TxMsg.Data[4] = (u8)(ChgCurZero >> 8);
+            TxMsg.Data[5] = 0x00;                         /* reserved */
+            TxMsg.Data[6] = (u8)(opa_cur & 0xFF);
+            TxMsg.Data[7] = (u8)((opa_cur >> 8) & 0xFF);
+            CAN_TransmitMessage(CAN2, &TxMsg);
+        }
+    }
+}
+#endif
+
 void CanCtrl(void)
 {
     if(TimerCan10msFlag)
@@ -203,6 +264,10 @@ void CanCtrl(void)
 
 #ifdef CAN2_TEST_FRAME
         Can2TestFrameSend();
+#endif
+
+#ifdef CAN2_DBG_DATA_FRAME
+        DbgDataFrameSend();
 #endif
 
 		if(BatStatus.Bits.PowerOff == 1) //关机不处理发送CAN数据

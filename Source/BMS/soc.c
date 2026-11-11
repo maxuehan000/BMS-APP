@@ -736,7 +736,7 @@ void SocCtrl(void)
         SocBaseTimer = 0;                                   /* 用于容量积分计算 重新开始计算时间 */
 		if ((SocCtr.InitDelay==0) && (DataFlashPowerDownSave.Soc.Ocv!=SOC_OCV_VERIFY))
 		{
-	//////////////////暂时注释：		SocOcvSet(OCV_INIT_SET);
+			SocOcvSet(OCV_INIT_SET);
 			if (IS_PRODUCT_ACTIVED())
             	DataFlashPowerDownSave.Soc.Ocv = SOC_OCV_VERIFY;
             	

@@ -108,13 +108,13 @@
 
 // =============================== CFG5 (0x59) ================================
 // 字段定义
-#define KC81710H_SCD_DELAY                      7       // SCD_DLY：477us
+#define KC81710H_SCD_DELAY                      5       // SCD_DLY：416us
 #define KC81710H_SCD_TH_DATA                    2       // SCD_TH：60mV ≈ 181.8A
 #define KC81710H_OTCR_HYS_DATA                  15      // OTCR_HYS：1.05kΩ（恢复52°C）
 #define KC81710H_OTDR_HYS_DATA                  15      // OTDR_HYS：0.95kΩ（恢复~53°C）
 
 /* 位域说明
-   [15:12] SCD_DLY[3:0]  放电短路延时, 约 50~1000us, 步长 61us    → 7 = 477us
+   [15:12] SCD_DLY[3:0]  放电短路延时, 约 50~1000us, 步长 61us    → 6 = 416us
    [11:8]  SCD_TH[3:0]   放电短路阈值, 范围 20~320mV, 步长 20mV   → 2 = 60mV
    [7:4]   OTCR_HYS[3:0] 退出OTC滞回=(0.3k+OTCR_HYS*0.05k), 步长0.05k, 全0=无OTC → 15 = 1.05kΩ
    [3:0]   OTDR_HYS[3:0] 退出OTD滞回=(0.2k+OTDR_HYS*0.05k), 步长0.05k, 全0=无OTD → 15 = 0.95kΩ

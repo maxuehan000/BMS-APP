@@ -19,7 +19,7 @@
 
 #ifndef __MULTICAN_H__
 #define __MULTICAN_H__
-//#define MULTIPLE_PARALLEL   /*不注释-则进行并包*/
+#define MULTIPLE_PARALLEL   /*不注释-则进行并包*/
 #if 1
 #define ADCOMPUTERIR        /*打开是AD采样来计算总内阻 */
 #ifndef ADCOMPUTERIR
@@ -68,6 +68,7 @@ extern void HwCompInit(void);
 
 extern u8 ReadMtOutputState(void);
 extern u8 ReadMtChgPluginState(void);
+extern u8 ReadOtherChgPluginState(void);
 extern u8 ReadMtOkMark(void);
 extern u8 ReadSingleBatFlag(void);
 extern u8 ReadIsMinBatFlag(void);

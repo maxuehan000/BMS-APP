@@ -27,6 +27,7 @@
 /* V1.1 充电器通讯(0x1A3/0x1B3) */
 #define CHG_REQ_CUR_10MA      1400              /* BMS请求最大充电电流 14A, 单位10mA */
 static u8 ChgType = 0x00;                      /* 充电器类型 0x00无 0x01普通6A 0x02快充27A 0x03充电机50A 0x5A故障 */
+static u16 ChgTypeTimer = 0;                    /* charger comm timeout counter (200ms tick) */
 
 static u8 Ecu_ChgPlugin = 0x5A;		/*有ECU检测到充电器在*/
 static u8 Ecu_Sleep = 0x5A;  /*ECU控制休眠*/
@@ -810,6 +811,7 @@ void SlCanBmsReceiveProcess(void)
 		if(AndCanRxMsgNow.Data[0] == 0x01)	// CMD指令码
 		{
 			ChgType = AndCanRxMsgNow.Data[1];	// 充电器类型
+			ChgTypeTimer = 10;                     // refresh timeout: 10*200ms = 2s
 			
 			if((ChgType != 0x00) && (ChgType != 0x5A))	// 充电器接入且非故障
 			{
@@ -995,7 +997,7 @@ void AndCanTransmitProcess(void)
 			SL_CanBmsMsgTransmit(STD_BMS_INFO3);
 			SL_CanBmsMsgTransmit(STD_BMS_INFO4);
 
-#if 0
+#if 1
 			/* V1.1 充电器通讯: 超时处理 */
 			if(ChgTypeTimer)
 			{

@@ -74,6 +74,7 @@ static u16 BroadcastDelay;         /*广播延迟*/
 static u8 MT_OkMark; 			/*并包获取地址成功标志*/
 static u8 Mt_Output = 0;		/*有外部的包已经开启放电Mos	*/
 static u8 Mt_ChgPlugin = 0;		/*有外部的包检测到充电器在*/
+static u8 OtherChgPlugin = 0;	/*任意对端包检测到充电器在(低压包识别总线充电器参与双充)*/
 
 
 static u8 noMainComMark; /*无主板通讯、无充放电流、无广播信息10s置位*/
@@ -686,6 +687,7 @@ void CheckCanOffLine(void)
 #define MTOSDELAYCDON     200 /*双包转单包的充放电MOS开延时需加长*/
 #define DISOFFDELAY       150  /*放电MOS关延时*/
 #define CHGOFFDELAY       150 /*充电MOS关延时保证电流识别，所以这个地方需要>1s延迟*/
+#define MTOSPROTECTDELAY  500  /*CAN2断开回退单包后的对充防护延时(500*10ms=5s)，期间禁止开充电MOS(放电MOS不封,避免负载断电)，防止高压包对低压包对充*/
 #define CHGOFFOTHERDISCUR -500 /*本地有充电电流但外部其他包是放电电流,达到一定值则关充电MOS，建议按最大允许充电电流设置，10mA*/
 typedef struct
 {
@@ -735,6 +737,7 @@ void  MtBmsControlJudge(void)
     s32 crv,mycrv;
     static u8 mtosDelay;  /*双包转单包的延时计数*/
     static u8 dmosofftoondelay;  /*dmos关闭后再开延迟加长*/
+    static u16 mtosprotectcnt;  /*CAN2断开回退单包后的对充防护倒计时，期间禁止开充电MOS(放电MOS不封,避免负载断电)*/
 //	static u8 cmosofftoondelay;  /*cmos因为充电器移除关闭后再开延迟加长*/
 
     static u8 lowpackvoldelay;
@@ -827,6 +830,7 @@ void  MtBmsControlJudge(void)
         multimaxcur = -32760;
         multimincur = 32760;
         multitotalcur = 0;
+        OtherChgPlugin = 0;
         mycrv = (s32)MyBmsData.cur*MyBmsData.iR/500;
         multiCondition.bit.otherminbatoffcmos=1;
         multiCondition.bit.othermaxbatoffdmos=1;
@@ -840,6 +844,10 @@ void  MtBmsControlJudge(void)
                 /*并入包数据有效下则可以进行并包判断*/
                 if((MtBmsData[i].MTBmsStatus.bits.diserr||MtBmsData[i].MTBmsStatus.bits.bmserr)&&MtBmsData[i].MTBmsStatus.bits.dismos==0)
                    ;
+                if(MtBmsData[i].MTBmsStatus.bits.chgplugin)
+                {/*任意对端包检测到充电器在,低压包据此识别总线充电器参与双充*/
+                    OtherChgPlugin = 1;
+                }
                 if(MtBmsData[i].MTBmsStatus.bits.chgplugin&&MtBmsData[i].MTBmsStatus.bits.chgerr==15)
                 {/*处于充电过温等待*/
                     multiCondition.bit.otherbatchgwait = 1;
@@ -924,11 +932,10 @@ void  MtBmsControlJudge(void)
             }
             if(multiCondition.bit.singlebat)
             {
-                if(BatStatus.Bits.AfeDsg==0)/*本地主放处于关闭状态，从单包转多包，需要关闭Cmos，预防被对充*/
-                {
-					MtBmsAllow.bit.ChgMosAllow = 0;
-				}
-				delaychgon = 0;
+                /* 从单包转多包瞬间无条件关闭充电MOS, 防止两包仍处于单包全开状态时P+并联导致高压包对低压包对充 */
+                MtBmsAllow.bit.ChgMosAllow = 0;
+                delaychgon = 0;
+                delaychgoff = 0;
             }
             multiCondition.bit.singlebat = 0;/*不是单包工作中*/
             /*进入并包按300mv*/
@@ -1008,6 +1015,19 @@ void  MtBmsControlJudge(void)
                 mtDbgOkPrinted = 0;
             }
             #endif
+            /* 防护: CAN2断开导致并包转单包瞬间, 立即关闭充放电MOS允许位并进入对充防护期,
+               防止高压包仍开CMOS、低压包仍开DMOS时经功率总线形成"高压包给低压包充电"的对充环流 */
+            if(multiCondition.bit.singlebat == 0)
+            {
+                MtBmsAllow.bit.DisMosAllow = 0;
+                MtBmsAllow.bit.ChgMosAllow = 0;
+                delaydison = 0;
+                delaychgon = 0;
+                delaydisoff = 0;
+                delaychgoff = 0;
+                dmosofftoondelay = 0;
+                mtosprotectcnt = MTOSPROTECTDELAY;
+            }
             multiCondition.bit.singlebat = 1;
             maxmark = 0;
             maxnum = 0;
@@ -1042,6 +1062,12 @@ void  MtBmsControlJudge(void)
             {
 
                 multiokDelay = MULTICONTROLDELAY;
+
+                /* 对充防护倒计时统一递减(每周期一次), 防护期内规则4禁止开充电MOS */
+                if(mtosprotectcnt)
+                {
+                    mtosprotectcnt--;
+                }
 
                 // 规则1: 外部有更低压包时,开Dmos的条件：
                 //   条件A: otherisminbat == 1  --> (存在比本包低300mV以上的包)
@@ -1198,29 +1224,36 @@ void  MtBmsControlJudge(void)
                     (multiCondition.bit.ismaxbat && BatStatus.Bits.ChgAble))
                     																//识别到当前包为最高电压或电压接近0.3v内，或单包，延迟判断开CMOS
                 {
-                    if(multiCondition.bit.ismaxbat && BatStatus.Bits.ChgAble)
-                    {																/*当前最高包，且有放电电流，则快速开cmos*/
-                        if(BatOpaCurGet()<-1000)									// Mcu采集电流,放电电流>1A, 马上开启
-                        {
-                            mtosDelay=0;
-                            delaychgon = CHGONDELAY;
+                    if(mtosprotectcnt)
+                    {/* 对充防护期内禁止开充电MOS, 防止高压包对低压包对充 */
+                        delaychgon = 0;
+                    }
+                    else
+                    {
+                        if(multiCondition.bit.ismaxbat && BatStatus.Bits.ChgAble)
+                        {																/*当前最高包，且有放电电流，则快速开cmos*/
+                            if(BatOpaCurGet()<-1000)									// Mcu采集电流,放电电流>1A, 马上开启
+                            {
+                                mtosDelay=0;
+                                delaychgon = CHGONDELAY;
+                            }
                         }
-                    }
-                    if(mtosDelay && multiCondition.bit.singlebat)
-                    {																/* 从双包转单包，需要做延迟再判断是否立即开MOS */
-                        mtosDelay--;
-                        delaychgon  = 0;
-                    }
+                        if(mtosDelay && multiCondition.bit.singlebat)
+                        {																/* 从双包转单包，需要做延迟再判断是否立即开MOS */
+                            mtosDelay--;
+                            delaychgon  = 0;
+                        }
 			//		if(cmosofftoondelay)/*识别到充电器移除，需延迟再开允许*/   		// ---> No Use
 			//			delaychgon = 0;
-                    if(delaychgon++>=CHGONDELAY)
-                    {
-                        delaychgon = CHGONDELAY;
-                        if(MtBmsAllow.bit.ChgMosAllow==0)
+                        if(delaychgon++>=CHGONDELAY)
                         {
-                            delaychgoff = 0;
+                            delaychgon = CHGONDELAY;
+                            if(MtBmsAllow.bit.ChgMosAllow==0)
+                            {
+                                delaychgoff = 0;
+                            }
+                            MtBmsAllow.bit.ChgMosAllow=1;
                         }
-                        MtBmsAllow.bit.ChgMosAllow=1;
                     }
                 }
                 else
@@ -1479,6 +1512,45 @@ void HandleCompCur(unionmultiCondition  *pmultiCondition);
     HandleCompCur(&multiCondition);/*针对多包并联下放电或充电，移除或故障下的快速切换*/
 void CheckSingleMosOnMarkToClr(void);
     CheckSingleMosOnMarkToClr();/*单包开mos标志清除判断*/
+
+    /* 并包调试帧 0x1F0+MyAddr(0x1F1/0x1F2): 无串口环境下周期(50ms)广播并包关键状态, 供CAN工具观测 */
+    {
+        static u8 mtDbgCanCnt = 0;
+        CanTxMessage dbgMsg = {0};
+        if((++mtDbgCanCnt) >= MTSENDTIME)
+        {
+            u32 chgcur8, discur8;
+            mtDbgCanCnt = 0;
+            dbgMsg.ExtId = 0;
+            dbgMsg.StdId = 0x1F0 + MyAddr;
+            dbgMsg.IDE = CAN_ID_STD;
+            dbgMsg.RTR = CAN_RTRQ_DATA;
+            dbgMsg.DLC = 8;
+            dbgMsg.Data[0] = MyAddr;                                        /* 本包地址 1/2 */
+            dbgMsg.Data[1] = (u8)(multiCondition.condition & 0xFF);         /* 跨包状态字节0 */
+            dbgMsg.Data[2] = (u8)((multiCondition.condition >> 8) & 0xFF);  /* 跨包状态字节1 */
+            dbgMsg.Data[3] = (u8)( MtBmsAllow.bit.DisMosAllow
+                                 | (MtBmsAllow.bit.ChgMosAllow << 1)
+                                 | (BatStatus.Bits.AfeDsg   << 2)
+                                 | (BatStatus.Bits.AfeChg   << 3)
+                                 | (BatStatus.Bits.ChgAble  << 4)
+                                 | (BatStatus.Bits.DsgAble  << 5)
+                                 | (BatStatus.Bits.ChgPlugin << 6)
+                                 | (BatStatus.Bits.DetIn    << 7) );         /* MOS/允许/充电器/在位 */
+            chgcur8 = ChgCurAvg >> 3;
+            discur8 = DisCurAvg >> 3;
+            if(chgcur8 > 0xFF) chgcur8 = 0xFF;
+            if(discur8 > 0xFF) discur8 = 0xFF;
+            dbgMsg.Data[4] = (u8)chgcur8;                                   /* 充电电流 8mA/LSB */
+            dbgMsg.Data[5] = (u8)discur8;                                   /* 放电电流 8mA/LSB */
+            {
+                s16 opacur10 = (s16)(BatOpaCurGet() / 10);                  /* 运放采样电流 10mA/LSB */
+                dbgMsg.Data[6] = (u8)(opacur10 & 0xFF);
+                dbgMsg.Data[7] = (u8)((opacur10 >> 8) & 0xFF);
+            }
+            queue_push_back(MtTxQueue, &dbgMsg);
+        }
+    }
 }
 
 /*自动恢复的场景，如果canerr，且端口电压很低，放电异常或故障恢复，需要重新尝试连接*/
@@ -2152,6 +2224,11 @@ u8 ReadMtOutputState(void)
 u8 ReadMtChgPluginState(void)
 {
 	return Mt_ChgPlugin;
+}
+
+u8 ReadOtherChgPluginState(void)
+{
+	return OtherChgPlugin;
 }
 
 /* 调试导出: 供 UartDebug 打印并包控制内部量 */

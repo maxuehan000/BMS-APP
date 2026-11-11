@@ -236,9 +236,9 @@
 #define M2_CUR_ZERO_MIN         (M2_CUR_ZERO_DEFAULT-50)               	// M2零飘范围最小值 
 
 /*----------------Charge Current----------------*/
-#define CHG_CUR_ZERO_DEFAULT    1969               						// 充电零飘范围默认值 3300/52 *25 / 3300*4095
-#define CHG_CUR_ZERO_MAX        (CHG_CUR_ZERO_DEFAULT+620)             // 充电零飘范围最大值 20mV*25 / 3300*4095 = 620
-#define CHG_CUR_ZERO_MIN        (CHG_CUR_ZERO_DEFAULT-620)             // 充电零飘范围最小值  
+#define CHG_CUR_ZERO_DEFAULT    2034               						// 充电零飘范围默认值 0A≈1.64V中点 差分放大20.8倍
+#define CHG_CUR_ZERO_MAX        (CHG_CUR_ZERO_DEFAULT+516)             // 充电零飘范围最大值 20mV*20.8 / 3300*4096 = 516
+#define CHG_CUR_ZERO_MIN        (CHG_CUR_ZERO_DEFAULT-516)             // 充电零飘范围最小值  
 
 #pragma pack(1)						// 按1字节对齐
 typedef struct

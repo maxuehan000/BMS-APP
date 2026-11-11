@@ -77,7 +77,7 @@ extern "C" {
 
 #define BAT_VOL_GAIN			1027/27
 
-#define OPA_CUR_GAIN			129/2	// =AD/4096*3300/25/0.5mR  #25倍 采样电阻:0.5mR
+#define OPA_CUR_GAIN			102	// =AD/4096*3300*1000/(0.33mR*24)  MCU内部OPAMP差分放大24倍 采样电阻:0.33mR(3x1mR并联)
 
 ////////////////////////////////////////////////////////
 #define CAN_TX1_Port			GPIOB

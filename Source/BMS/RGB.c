@@ -339,25 +339,28 @@ void RGBPwmUp(void)
         return;
     }
 
-    /* 4. 充电状态 (以充电器插入标志为准, Chg 是充电MOS状态, 未插充电器也会打开) */
+    /* 4. 充电状态 (有充电器才显示; 其中"充电中"要求确有充电电流, 避免并包时无电流的包 ChgPlugin 抖动导致灯闪) */
     if (BatStatus.Bits.ChgPlugin)
     {
-        if (BatStatus.Bits.ChgFC || (soc >= 100))    /* 充满 */
+        if (BatStatus.Bits.ChgFC || (soc >= 100))    /* 充满 (只靠充电器在位) */
         {
             gLedTrigger = LED_CHG_FULL;
             RGBAllGreen();
+            return;
         }
-        else if (soc >= 95)                          /* 涓流充电 */
+        else if (soc >= 95)                          /* 涓流充电 (只靠充电器在位) */
         {
             gLedTrigger = LED_CHG_TRICKLE;
             RGBAllUpdata(&CLR_YELLOW);
+            return;
         }
-        else                                         /* 0~95% 充电中 */
+        else if (ChgCurAvg > CHG_SMALL_CUR)          /* 0~95% 充电中: 有充电电流才算 */
         {
             gLedTrigger = LED_CHARGING;
             RGBChargeBreath(tick);
+            return;
         }
-        return;
+        /* 有充电器但无充电电流且未满 -> 落到工作态显示, 不闪 */
     }
 
     /* 4.5 低电量告警: 未充电工作状态下 SOC<15% -> 单颗绿灯快闪 2Hz
