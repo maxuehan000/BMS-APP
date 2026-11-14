@@ -23,3 +23,13 @@ JLinkLog.txt
 *.map
 *.lst
 *.dep
+
+# CodeBuddy project data
+.codebuddy/
+
+# Keil lock file
+uv4.log.lock
+
+# Local temporary / debug files
+_*.txt
+_*.py
