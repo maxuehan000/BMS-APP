@@ -16,8 +16,8 @@
 #define RGB_SUM        24                           /* 每颗 LED 24 bit */
 #define RGB_ALL_SUM    (RGB_NUM * RGB_SUM + RGB_SUM) /* 数据 + 复位间隙 */
 
-/* 测试模式: 1 = 测试效果; 0 = 正常状态机(正式版本) */
-#define RGB_TEST_MODE  0
+/* 测试模式: 1 = RGB灯测试程序(红->绿->黄->蓝->紫循环, 500ms切换); 0 = 正常状态机(正式版本) */
+#define RGB_TEST_MODE  1
 
 /* 上电稳定延时: 上电瞬间 AFE/ADC 采样未就绪, 状态位会误判(如温度=0被当成低温),
  * 延时结束后才开始状态判定, 避免开机时出现不必要的红闪/黄闪 */
@@ -48,6 +48,19 @@ static const RGB_COLOR CLR_RED    = {255,   0,   0};
 static const RGB_COLOR CLR_GREEN  = {  0, 255,   0};
 static const RGB_COLOR CLR_YELLOW = {255, 255,   0};
 static const RGB_COLOR CLR_BLACK  = {  0,   0,   0};
+
+#if RGB_TEST_MODE
+/* RGB灯测试程序颜色序列: 红 -> 绿 -> 黄 -> 蓝 -> 紫 */
+static const RGB_COLOR CLR_TestTable[] =
+{
+    {255,   0,   0},   /* 红 */
+    {  0, 255,   0},   /* 绿 */
+    {255, 255,   0},   /* 黄 */
+    {  0,   0, 255},   /* 蓝 */
+    {255,   0, 255},   /* 紫 = 红 + 蓝 */
+};
+#define RGB_TEST_COLOR_NUM  (sizeof(CLR_TestTable) / sizeof(CLR_TestTable[0]))
+#endif
 
 /* ==================== DMA 发送缓冲 ==================== */
 static u16 RGB_Buffer[RGB_ALL_SUM];
@@ -243,18 +256,15 @@ static void RGBChargeBreath(u16 tick)
 }
 
 #if RGB_TEST_MODE
-/* 测试: 红绿交替闪烁, 4 颗灯同色, 每500ms切换一次颜色 */
-static void RGBRedGreenBlink(u16 tick)
-{
-    RGB_COLOR c = ((tick % 100) < 50) ? CLR_RED : CLR_GREEN;  /* 红绿交替 */
-    u8 i;
+/* RGB灯测试程序: 所有灯按 红->绿->黄->蓝->紫 循环显示, 每500ms切换一次颜色
+ * RGBPwmUp() 由 SysTick 每 10ms 调用一次, 故 50 个 tick = 500ms */
+#define RGB_TEST_SWITCH_TICKS  50
 
-    RGB_Buffer_Int();
-    for (i = 0; i < RGB_NUM; i++)
-    {
-        RGBSetPixel(i, &c);
-    }
-    RGBStartTransfer();
+static void RGBColorCycleTest(u16 tick)
+{
+    u8 idx = (u8)((tick / RGB_TEST_SWITCH_TICKS) % RGB_TEST_COLOR_NUM);
+
+    RGBAllUpdata(&CLR_TestTable[idx]);   /* 4 颗灯同色并发送 */
 }
 #endif
 
@@ -269,8 +279,8 @@ void RGBPwmUp(void)
     tick++;
 
 #if RGB_TEST_MODE
-    /* 测试模式: 上电即显示红绿交替闪烁 */
-    RGBRedGreenBlink(tick);
+    /* 测试程序: 上电即开始 红->绿->黄->蓝->紫 循环显示(每500ms切换) */
+    RGBColorCycleTest(tick);
 #else
     static u16 stableTick = 0;                /* 上电稳定计数 */
     u8  soc  = SocInfo.SocS;
