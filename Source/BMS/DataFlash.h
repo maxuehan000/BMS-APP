@@ -75,6 +75,7 @@ typedef struct
     u16 VddVerify;
 	  u16 OpaBias;   /*运放偏置*/
     u32 Crc;
+    u16 VTotalKi;              /* 总压校准K (追加在末尾，保持Crc及之前字段Flash偏移不变) */
 } StrDataFlashAtOnceSave;
 
 //掉电保存的数据结构，全局变量，外部引用修改
@@ -151,6 +152,7 @@ extern XRAM StrDataFlashPowerDownSave DataFlashPowerDownSave;    //掉电时保�
 #define DATA_CUR_K_DSGM			DataFlashAtOnceSave.Current_K[K_DSGM_CUR]
 #endif
 #define DATA_VOL_K_PACK     DataFlashAtOnceSave.VPackKi
+#define DATA_VOL_K_TOTAL    DataFlashAtOnceSave.VTotalKi
 
 void AtOnceSaveDataWrite(void);
 void AtOnceSaveDataRead(void);

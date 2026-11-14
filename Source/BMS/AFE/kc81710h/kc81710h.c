@@ -1148,8 +1148,6 @@ uint8_t kc81710h_read_current(int32_t *ma)
 	tmp32 = (uint32_t)tmp << 2 | tmp1;
 	itmp32 = kc81710h_S24toS32(tmp32);
 
-	CalibZeroCurRun(itmp32);
-	
 	*ma = kc81710h_current_ma_cal(itmp32, RSENSE);
 
 	return KC_STATUS_OK;

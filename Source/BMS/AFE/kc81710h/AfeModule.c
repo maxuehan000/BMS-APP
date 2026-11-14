@@ -469,7 +469,7 @@ void AfeInfoUpdata(void)
 	// 更新Vbat
 	if(!BatStatus.Bits.AfeErr)
 	{
-		BatData.VolTotal = qcgChip.vbat;
+		BatData.VolTotal = qcgChip.vbat;	// 总压校准已屏蔽，直接用原始值
 	}
 	else
 	{

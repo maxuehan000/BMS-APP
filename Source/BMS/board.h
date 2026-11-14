@@ -77,7 +77,7 @@ extern "C" {
 
 #define BAT_VOL_GAIN			1027/27
 
-#define OPA_CUR_GAIN			102	// =AD/4096*3300*1000/(0.33mR*24)  MCU内部OPAMP差分放大24倍 采样电阻:0.33mR(3x1mR并联)
+#define OPA_CUR_GAIN			95	// 实测校准: I[mA]=(ChgCurZero-AD)*GAIN; 0~35A/AD1996~1625 最小二乘拟合 k≈94.7mA/AD, 取95. 理论值=AD/4096*3300*1000/(0.33mR*24)≈102
 
 ////////////////////////////////////////////////////////
 #define CAN_TX1_Port			GPIOB

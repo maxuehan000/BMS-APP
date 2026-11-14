@@ -5,8 +5,11 @@
 #include "queue.h"
 
 
-#define BW_ID_EXT_PC					0x1F7007F1UL
-#define BW_ID_EXT_BMS					0x1F7007F2UL
+#define BW_ID_EXT_PC					0x1F70F4F9UL	// PC->BMS (协议约定 PC端发送ID)
+#define BW_ID_EXT_BMS					0x1F70F9F4UL	// BMS->PC (协议约定 BMS端回复ID)
+//#define BW_ID_EXT_PC					0x1F7007F1UL	// PC->BMS (协议约定 PC端发送ID)
+//#define BW_ID_EXT_BMS					0x1F7007F2UL	// BMS->PC (协议约定 BMS端回复ID)
+
 #define BW_ID_STD_PC					0x07F1U
 #define BW_ID_STD_BMS					0x07F2U
 

@@ -380,15 +380,17 @@ void BatOpaCurUpdate(void)
     
 	static u16 CurFilter[FILTERNUM] = {0};
     static u8 filtercount = 0;
+    static u8 opa_filter_inited = 0;
     u8 i;
 	u16 AdData;
 	s32 CurData;
     u32 ab;
-	if(CurFilter[0]==0) 
+	if((!opa_filter_inited) && (ChgCurZero != 0))	/* 零漂标定完成后才预填滤波窗口 */
     {
         for(i=0;i<FILTERNUM;i++)
             CurFilter[i] = ChgCurZero; 
         filtercount = 0;
+        opa_filter_inited = 1;
     }
 	
     AdData = AdcData.ADVal[CH_OPAM_CUR];

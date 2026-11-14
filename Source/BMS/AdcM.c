@@ -19,6 +19,7 @@
 #define _ADCM_C_
 
 #include "AdcM.h"
+#include "Calib.h"
 
 /*******************************************************************************
          						ADC1ºÏ≤‚Õ®µ¿
@@ -294,6 +295,17 @@ void AdcM_Ctrl(void)
     TimerAdcFlag = 0;
 		
 	AdcM_Calc();
+
+#ifdef OPA_COC_EN
+    {
+        static u8 opa_zero_calib_done = 0;
+        if(!opa_zero_calib_done)
+        {
+            opa_zero_calib_done = 1;
+            CalibCurBias();
+        }
+    }
+#endif
 }
 
 /************************ (C) Blueway Electronics Co. *****END OF FILE*********/

@@ -834,6 +834,17 @@ static void FuncCalib(void)
 
     switch(CmdCode)
     {
+        // 电芯总压校准 (协议 71 00 xx xx xx xx -> 71 00 00/01)
+        case COMM_CALIB_TOTAL_VOL:
+        {
+            // 总压校准已屏蔽（电压校准关闭），直接回失败
+            CalibFlag = 0;
+            TxMsgNow.Data[2] = BW_ACK_FAIL;
+            TxMsgNow.DLC = 3;
+            queue_push_back(BwTxQueue, &TxMsgNow);
+        }
+        break;
+
     #ifndef AFE_MODEULE
         case COMM_CALIB_CELL_VOL:
         {        	
@@ -854,7 +865,14 @@ static void FuncCalib(void)
 	
         case COMM_CALIB_CHG_CURRENT:
         {
-        	CalibChgCur((u8 *)(&RxMsgNow.Data[2]));
+            if (IS_FACTORY_TEST_MODE())
+            {
+                CalibChgCur((u8 *)(&RxMsgNow.Data[2]));
+            }
+            else
+            {
+                CalibFlag = 0;
+            }
             if (CalibFlag == 1)  
             {
             	TxMsgNow.Data[2] = BW_ACK_OK;
@@ -870,7 +888,14 @@ static void FuncCalib(void)
 
         case COMM_CALIB_DIS_CURRENT:
         {
-            CalibDsgCur((u8 *)(&RxMsgNow.Data[2]));
+            if (IS_FACTORY_TEST_MODE())
+            {
+                CalibDsgCur((u8 *)(&RxMsgNow.Data[2]));
+            }
+            else
+            {
+                CalibFlag = 0;
+            }
             if (CalibFlag == 1)  
             {
             	TxMsgNow.Data[2] = BW_ACK_OK;

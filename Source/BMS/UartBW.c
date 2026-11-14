@@ -992,7 +992,14 @@ void FuncCalib(u8 RW_Flag)
 	
         case COMM_CALIB_CHG_CURRENT:
         {
-        	CalibChgCur((u8 *)(&UartBuf[6]));
+            if (IS_FACTORY_TEST_MODE())
+            {
+                CalibChgCur((u8 *)(&UartBuf[6]));
+            }
+            else
+            {
+                CalibFlag = 0;
+            }
             UartBuf[5] = 1;                                         // 回复数据1个DATA   
             UartBuf[6] = CalibFlag;
         }
@@ -1000,7 +1007,14 @@ void FuncCalib(u8 RW_Flag)
 
         case COMM_CALIB_DIS_CURRENT:
         {
-            CalibDsgCur((u8 *)(&UartBuf[6]));
+            if (IS_FACTORY_TEST_MODE())
+            {
+                CalibDsgCur((u8 *)(&UartBuf[6]));
+            }
+            else
+            {
+                CalibFlag = 0;
+            }
             UartBuf[5] = 1;                                         // 回复数据1个DATA   
             UartBuf[6] = CalibFlag;          
         }
@@ -1008,8 +1022,15 @@ void FuncCalib(u8 RW_Flag)
 
         case COMM_CALIB_ZERO_CURRENT:
         {
-        	CalibZeroCurrent();
-        	UartBuf[5] = 1;                                         // 回复数据1个DATA   
+            if (IS_FACTORY_TEST_MODE())
+            {
+                CalibZeroCurrent();
+            }
+            else
+            {
+                CalibFlag = 0;
+            }
+            UartBuf[5] = 1;                                         // 回复数据1个DATA   
             UartBuf[6] = CalibFlag;
         }
         break;
@@ -1023,9 +1044,16 @@ void FuncCalib(u8 RW_Flag)
         break;
 			case COMM_CALIB_VPACK_VOL:  //校准VPACK电压
 				{							
+					if (IS_FACTORY_TEST_MODE())
+					{
 						CalibFlag = CalibPackVol((u8 *)(&UartBuf[6]));
-						UartBuf[5] = 1;
-					  UartBuf[6] = CalibFlag;
+					}
+					else
+					{
+						CalibFlag = 0;
+					}
+					UartBuf[5] = 1;
+					UartBuf[6] = CalibFlag;
 				}
 				break;
 	#ifndef AFE_MODEULE

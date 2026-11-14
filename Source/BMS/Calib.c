@@ -1,6 +1,9 @@
 #include "Calib.h" 
 #include "DataFlash.h"
 #include "AdcM.h"
+#ifdef AFE_MODEULE
+#include "AfeModule.h"
+#endif
 
 #if 0
 /*****************************************************************************
@@ -73,6 +76,46 @@ u8 CalibPackVol(u8 *uartbuf)
 }
 
 /*****************************************************************************
+ 函 数 名  : CalibTotalVol
+ 功能描述  : 电芯总压校准：上位机下发标准总压(mV)，计算总压校准K
+ 输入参数  : uartbuf - 4字节标准总压(大端, mV)
+ 返 回 值  : 
+*****************************************************************************/
+void CalibTotalVol(u8 *uartbuf)
+{
+    // 总压校准已屏蔽（电压校准关闭），保留函数壳避免调用点编译错误
+    (void)uartbuf;
+#if 0
+    u32 vol_cal, vol_ad;
+
+    CalibFlag = 1;
+
+    vol_cal = ((u32)uartbuf[0] << 24) |
+              ((u32)uartbuf[1] << 16) |
+              ((u32)uartbuf[2] << 8)  |
+              ((u32)uartbuf[3]);                     // 上位机下发标准总压 mV
+
+    vol_ad = (u32)qcgChip.vbat;                      // 原始未校准总压 mV，避免迭代误差
+
+    if ((vol_ad == 0) || (vol_cal == 0) || (vol_cal > 100000UL))
+    {
+        CalibFlag = 0;
+        return;
+    }
+
+    DATA_VOL_K_TOTAL = (u16)((vol_cal * VOL_K_DEFAULT) / vol_ad);
+
+    if (DATA_VOL_K_TOTAL < VOL_K_MIN || DATA_VOL_K_TOTAL > VOL_K_MAX)
+    {
+        CalibFlag = 0;
+        DATA_VOL_K_TOTAL = VOL_K_DEFAULT;
+    }
+
+    AtOnceSaveDataWrite();
+#endif
+}
+
+/*****************************************************************************
  函 数 名  : CalibBat
  功能描述  : 上位机下发校准数据，由MCU进行电芯自校准，确定校准K值
  输入参数  :   
@@ -125,6 +168,11 @@ void CalibDsgCur(u8 *uartbuf)
     Temp_Cur = uartbuf[0];                                  // 高位
     Temp_Cur = Temp_Cur << 8;                               // 高位左移
     Temp_Cur += uartbuf[1];                                 // 低位
+    if (DisCurAvg == 0)                                     // 防止除零（未处于放电状态）
+    {
+        CalibFlag = 0;
+        return;
+    }
     DATA_CUR_K_DSGM = (u32)Temp_Cur*DATA_CUR_K_DSGM/DisCurAvg;
     if(DATA_CUR_K_DSGM<CUR_K_MIN || DATA_CUR_K_DSGM>CUR_K_MAX)
     {
@@ -147,6 +195,11 @@ void CalibChgCur(u8 *uartbuf)
     Temp_Cur = uartbuf[0];                                  // 高位
     Temp_Cur = Temp_Cur << 8;                               // 高位左移
     Temp_Cur += uartbuf[1];                                 // 低位
+    if (ChgCurAvg == 0)                                     // 防止除零（未处于充电状态）
+    {
+        CalibFlag = 0;
+        return;
+    }
     DATA_CUR_K_CHG = (u32)Temp_Cur*DATA_CUR_K_CHG/ChgCurAvg;
     if(DATA_CUR_K_CHG<CUR_K_MIN || DATA_CUR_K_CHG>CUR_K_MAX)
     {
@@ -205,13 +258,15 @@ void CalibInit(void)
         WriteFlash = 1;
     }
 
+    if (DATA_VOL_K_TOTAL<VOL_K_MIN || DATA_VOL_K_TOTAL>VOL_K_MAX)
+    {
+        DATA_VOL_K_TOTAL = VOL_K_DEFAULT;
+        WriteFlash = 1;
+    }
+
     if (WriteFlash == 1)
     {
 			AtOnceSaveDataWrite();
     }
-
-#ifdef OPA_COC_EN
-    CalibCurBias();
-#endif
 }
 

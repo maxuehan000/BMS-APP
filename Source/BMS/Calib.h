@@ -46,7 +46,9 @@ extern void CalibZeroCurrent(void);
 extern void CalibDsgCur(u8 *uartbuf);
 extern void CalibChgCur(u8 *uartbuf);
 extern void CalibBat(void);
+extern void CalibTotalVol(u8 *uartbuf);
 extern void CalibInit(void);
+extern void CalibCurBias(void);
 
 //extern void CalibChargerVol(u8 *uartbuf); 			// 充电器总电压校准
 #endif

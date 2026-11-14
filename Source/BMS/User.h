@@ -56,7 +56,7 @@
 #define CHG_OVER_VOL                        4200
 #define CHG_OVER_VOL_RE                     4050
 #endif
-#define CHG_OVER_VOL_TOTAL                  (CHG_OVER_VOL*CELL_NUM)
+#define CHG_OVER_VOL_TOTAL                  54200	// 过充保护总压 54.2V
 #define CHG_OVER_VOL_TOTAL_RE               (CHG_OVER_VOL_RE*CELL_NUM)
 #define CHG_SMALL_CUR                       500
 #define CHG_SMALL_CUR_TOTALVOL              (4150*CELL_NUM)
